@@ -78,13 +78,13 @@
 
      // Optional: color gradient by region
      function colorFor(q, r) {
-       const sum = q + r;
+       const sum = -q-r;
        if (r <= -5) return "#93c5fd";        // North - blue-00
        if (r >= 5) return "#fca5a5";         // South - red-300
        if (q >= 5) return "#fde68a";         // NE - yellow-300
        if (q <= -5) return "#86efac";        // SW - green-300
-       if (sum <= -5) return "#c4b5fd";      // NW - purple-300
-       if (sum >= 5) return "#5eead4";       // SE - teal-300
+       if (sum <= -5)  return "#5eead4";     // SE - teal-300
+       if (sum >= 5) return "#c4b5fd";       // NW - purple-300
        return "#fafafa";                     // center area
      }
 
