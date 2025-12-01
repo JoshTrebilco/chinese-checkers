@@ -119,4 +119,83 @@ class BoardState extends State
     {
         return $this->game_id ? GameState::load($this->game_id) : null;
     }
+
+    /**
+     * Get the 10 starting positions for a given color
+     *
+     * @param string $color The player color (blue, red, yellow, green, teal, purple)
+     * @return array Array of ['q' => int, 'r' => int] positions
+     */
+    public function getStartingPositionsForColor(string $color): array
+    {
+        $positions = [];
+        $sum = 0;
+
+        // Generate all positions and filter by color region
+        for ($q = -8; $q <= 8; $q++) {
+            for ($r = -8; $r <= 8; $r++) {
+                $sum = -$q - $r;
+                
+                $matches = false;
+                switch ($color) {
+                    case 'blue': // North
+                        $matches = $r <= -5 && $r >= -8 && $q >= 1 && $q <= 4 && $sum >= 0 && $sum <= 4;
+                        break;
+                    case 'red': // South
+                        $matches = $r >= 5 && $r <= 8 && $q >= -4 && $q <= -1 && $sum >= -4 && $sum <= 0;
+                        break;
+                    case 'yellow': // NE
+                        $matches = $q >= 5 && $q <= 8 && $r >= -4 && $r <= 0 && $sum >= -4 && $sum <= 0;
+                        break;
+                    case 'green': // SW
+                        $matches = $q <= -5 && $q >= -8 && $r >= 0 && $r <= 4 && $sum <= 4 && $sum >= 0;
+                        break;
+                    case 'teal': // SE
+                        $matches = $sum <= -5 && $sum >= -8 && $r <= 4 && $r >= -4 && $q >= -4 && $q <= 4;
+                        break;
+                    case 'purple': // NW
+                        $matches = $sum >= 5 && $sum <= 8 && $r <= 4 && $r >= -4 && $q >= -4 && $q <= 4;
+                        break;
+                }
+
+                if ($matches && $this->isOnBoard($q, $r)) {
+                    $positions[] = ['q' => $q, 'r' => $r];
+                }
+            }
+        }
+
+        // Ensure we have exactly 10 positions
+        return array_slice($positions, 0, 10);
+    }
+
+    /**
+     * Get the 6 adjacent positions for a given hex coordinate
+     *
+     * @param int $q
+     * @param int $r
+     * @return array Array of ['q' => int, 'r' => int] positions
+     */
+    public function getAdjacentPositions(int $q, int $r): array
+    {
+        // Hexagonal grid has 6 neighbors
+        $directions = [
+            ['q' => 1, 'r' => 0],   // East
+            ['q' => 1, 'r' => -1],  // Northeast
+            ['q' => 0, 'r' => -1],  // Northwest
+            ['q' => -1, 'r' => 0],  // West
+            ['q' => -1, 'r' => 1],  // Southwest
+            ['q' => 0, 'r' => 1],   // Southeast
+        ];
+
+        $adjacent = [];
+        foreach ($directions as $dir) {
+            $newQ = $q + $dir['q'];
+            $newR = $r + $dir['r'];
+            if ($this->isOnBoard($newQ, $newR)) {
+                $adjacent[] = ['q' => $newQ, 'r' => $newR];
+            }
+        }
+
+        return $adjacent;
+    }
 }

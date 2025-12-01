@@ -1,9 +1,13 @@
 <?php
 
+use App\Events\Gameplay\TokenMoved;
 use App\Events\Setup\BoardCreated;
 use App\Events\Setup\GameCreated;
+use App\Events\Setup\PlayerJoined;
+use App\Events\Setup\TokensPlaced;
 use App\States\BoardState;
 use App\States\GameState;
+use App\States\PlayerState;
 use Thunk\Verbs\Facades\Verbs;
 
 beforeEach(function () {
@@ -117,4 +121,268 @@ test('board cells are properly initialized', function () {
         ->and($cell['q'])->toBe(0)
         ->and($cell['r'])->toBe(0)
         ->and($cell['piece'])->toBeNull();
+});
+
+test('player color is auto-assigned when joining', function () {
+    $game_state = verb(new GameCreated)->state(GameState::class);
+    $board_state = verb(new BoardCreated(game_id: $game_state->id))->state(BoardState::class);
+
+    $player1 = verb(new PlayerJoined(game_id: $game_state->id, player_id: 1, name: 'Player 1'))->state(PlayerState::class);
+    expect($player1->color)->toBe('blue');
+
+    $player2 = verb(new PlayerJoined(game_id: $game_state->id, player_id: 2, name: 'Player 2'))->state(PlayerState::class);
+    expect($player2->color)->toBe('red');
+
+    $player3 = verb(new PlayerJoined(game_id: $game_state->id, player_id: 3, name: 'Player 3'))->state(PlayerState::class);
+    expect($player3->color)->toBe('yellow');
+});
+
+test('starting positions are calculated correctly for each color', function () {
+    $game_state = verb(new GameCreated)->state(GameState::class);
+    $board_state = verb(new BoardCreated(game_id: $game_state->id))->state(BoardState::class);
+
+    $colors = ['blue', 'red', 'yellow', 'green', 'teal', 'purple'];
+
+    foreach ($colors as $color) {
+        $positions = $board_state->getStartingPositionsForColor($color);
+        expect($positions)->toHaveCount(10);
+
+        // Verify all positions are on the board
+        foreach ($positions as $pos) {
+            expect($board_state->isOnBoard($pos['q'], $pos['r']))->toBeTrue();
+        }
+    }
+});
+
+test('starting positions are in correct region for each color', function () {
+    $game_state = verb(new GameCreated)->state(GameState::class);
+    $board_state = verb(new BoardCreated(game_id: $game_state->id))->state(BoardState::class);
+
+    // Test blue (North) - r <= -5
+    $bluePositions = $board_state->getStartingPositionsForColor('blue');
+    foreach ($bluePositions as $pos) {
+        expect($pos['r'])->toBeLessThanOrEqual(-5);
+        expect($pos['r'])->toBeGreaterThanOrEqual(-8);
+        expect($pos['q'])->toBeGreaterThanOrEqual(1);
+        expect($pos['q'])->toBeLessThanOrEqual(4);
+    }
+
+    // Test red (South) - r >= 5
+    $redPositions = $board_state->getStartingPositionsForColor('red');
+    foreach ($redPositions as $pos) {
+        expect($pos['r'])->toBeGreaterThanOrEqual(5);
+        expect($pos['r'])->toBeLessThanOrEqual(8);
+        expect($pos['q'])->toBeGreaterThanOrEqual(-4);
+        expect($pos['q'])->toBeLessThanOrEqual(-1);
+    }
+
+    // Test yellow (NE) - q >= 5
+    $yellowPositions = $board_state->getStartingPositionsForColor('yellow');
+    foreach ($yellowPositions as $pos) {
+        expect($pos['q'])->toBeGreaterThanOrEqual(5);
+        expect($pos['q'])->toBeLessThanOrEqual(8);
+        expect($pos['r'])->toBeGreaterThanOrEqual(-4);
+        expect($pos['r'])->toBeLessThanOrEqual(0);
+    }
+
+    // Test green (SW) - q <= -5
+    $greenPositions = $board_state->getStartingPositionsForColor('green');
+    foreach ($greenPositions as $pos) {
+        expect($pos['q'])->toBeLessThanOrEqual(-5);
+        expect($pos['q'])->toBeGreaterThanOrEqual(-8);
+        expect($pos['r'])->toBeGreaterThanOrEqual(0);
+        expect($pos['r'])->toBeLessThanOrEqual(4);
+    }
+
+    // Test teal (SE) - sum <= -5
+    $tealPositions = $board_state->getStartingPositionsForColor('teal');
+    foreach ($tealPositions as $pos) {
+        $sum = -$pos['q'] - $pos['r'];
+        expect($sum)->toBeLessThanOrEqual(-5);
+        expect($sum)->toBeGreaterThanOrEqual(-8);
+    }
+
+    // Test purple (NW) - sum >= 5
+    $purplePositions = $board_state->getStartingPositionsForColor('purple');
+    foreach ($purplePositions as $pos) {
+        $sum = -$pos['q'] - $pos['r'];
+        expect($sum)->toBeGreaterThanOrEqual(5);
+        expect($sum)->toBeLessThanOrEqual(8);
+    }
+});
+
+test('tokens are placed correctly in starting positions', function () {
+    $game_state = verb(new GameCreated)->state(GameState::class);
+    $board_state = verb(new BoardCreated(game_id: $game_state->id))->state(BoardState::class);
+
+    $player = verb(new PlayerJoined(game_id: $game_state->id, player_id: 1, name: 'Player 1'))->state(PlayerState::class);
+    expect($player->color)->toBe('blue');
+
+    verb(new TokensPlaced(board_id: $board_state->id, player_id: 1));
+    $board_state = BoardState::load($board_state->id);
+
+    $startingPositions = $board_state->getStartingPositionsForColor('blue');
+    expect($startingPositions)->toHaveCount(10);
+
+    // Verify all starting positions have the player's token
+    foreach ($startingPositions as $pos) {
+        $cell = $board_state->getCell($pos['q'], $pos['r']);
+        expect($cell)->not->toBeNull()
+            ->and($cell['piece'])->toBe(1);
+    }
+});
+
+test('tokens are placed in correct region based on color', function () {
+    $game_state = verb(new GameCreated)->state(GameState::class);
+    $board_state = verb(new BoardCreated(game_id: $game_state->id))->state(BoardState::class);
+
+    // Create players with different colors
+    $player1 = verb(new PlayerJoined(game_id: $game_state->id, player_id: 1, name: 'Player 1'))->state(PlayerState::class);
+    $player2 = verb(new PlayerJoined(game_id: $game_state->id, player_id: 2, name: 'Player 2'))->state(PlayerState::class);
+
+    // Place tokens
+    verb(new TokensPlaced(board_id: $board_state->id, player_id: 1));
+    verb(new TokensPlaced(board_id: $board_state->id, player_id: 2));
+    $board_state = BoardState::load($board_state->id);
+
+    // Verify player 1 (blue) tokens are in North region
+    $bluePositions = $board_state->getStartingPositionsForColor('blue');
+    foreach ($bluePositions as $pos) {
+        $cell = $board_state->getCell($pos['q'], $pos['r']);
+        expect($cell['piece'])->toBe(1);
+    }
+
+    // Verify player 2 (red) tokens are in South region
+    $redPositions = $board_state->getStartingPositionsForColor('red');
+    foreach ($redPositions as $pos) {
+        $cell = $board_state->getCell($pos['q'], $pos['r']);
+        expect($cell['piece'])->toBe(2);
+    }
+});
+
+test('adjacent positions are calculated correctly', function () {
+    $game_state = verb(new GameCreated)->state(GameState::class);
+    $board_state = verb(new BoardCreated(game_id: $game_state->id))->state(BoardState::class);
+
+    // Test center position (0, 0) should have 6 adjacent positions
+    $adjacent = $board_state->getAdjacentPositions(0, 0);
+    expect($adjacent)->toHaveCount(6);
+
+    // Verify all adjacent positions are on the board
+    foreach ($adjacent as $pos) {
+        expect($board_state->isOnBoard($pos['q'], $pos['r']))->toBeTrue();
+    }
+
+    // Test edge position - should have fewer adjacent positions
+    $adjacent = $board_state->getAdjacentPositions(1, -5);
+    expect($adjacent)->toBeArray();
+    expect(count($adjacent))->toBeLessThanOrEqual(6);
+});
+
+test('token can be moved to adjacent position', function () {
+    $game_state = verb(new GameCreated)->state(GameState::class);
+    $board_state = verb(new BoardCreated(game_id: $game_state->id))->state(BoardState::class);
+
+    $player = verb(new PlayerJoined(game_id: $game_state->id, player_id: 1, name: 'Player 1'))->state(PlayerState::class);
+    verb(new TokensPlaced(board_id: $board_state->id, player_id: 1));
+    $board_state = BoardState::load($board_state->id);
+
+    // Get a starting position
+    $startingPositions = $board_state->getStartingPositionsForColor('blue');
+    $fromPos = $startingPositions[0];
+
+    // Get an adjacent position that's empty
+    $adjacent = $board_state->getAdjacentPositions($fromPos['q'], $fromPos['r']);
+    $toPos = null;
+    foreach ($adjacent as $adj) {
+        $cell = $board_state->getCell($adj['q'], $adj['r']);
+        if ($cell && $cell['piece'] === null) {
+            $toPos = $adj;
+            break;
+        }
+    }
+
+    expect($toPos)->not->toBeNull();
+
+    // Move token
+    verb(new TokenMoved(
+        board_id: $board_state->id,
+        player_id: 1,
+        from_q: $fromPos['q'],
+        from_r: $fromPos['r'],
+        to_q: $toPos['q'],
+        to_r: $toPos['r']
+    ));
+    $board_state = BoardState::load($board_state->id);
+
+    // Verify from position is now empty
+    $fromCell = $board_state->getCell($fromPos['q'], $fromPos['r']);
+    expect($fromCell['piece'])->toBeNull();
+
+    // Verify to position has the token
+    $toCell = $board_state->getCell($toPos['q'], $toPos['r']);
+    expect($toCell['piece'])->toBe(1);
+});
+
+test('cannot move token to occupied position', function () {
+    $game_state = verb(new GameCreated)->state(GameState::class);
+    $board_state = verb(new BoardCreated(game_id: $game_state->id))->state(BoardState::class);
+
+    $player1 = verb(new PlayerJoined(game_id: $game_state->id, player_id: 1, name: 'Player 1'))->state(PlayerState::class);
+    $player2 = verb(new PlayerJoined(game_id: $game_state->id, player_id: 2, name: 'Player 2'))->state(PlayerState::class);
+
+    verb(new TokensPlaced(board_id: $board_state->id, player_id: 1));
+    verb(new TokensPlaced(board_id: $board_state->id, player_id: 2));
+    $board_state = BoardState::load($board_state->id);
+
+    // Get a position with player 1's token
+    $bluePositions = $board_state->getStartingPositionsForColor('blue');
+    $fromPos = $bluePositions[0];
+
+    // Get a position with player 2's token
+    $redPositions = $board_state->getStartingPositionsForColor('red');
+    $toPos = $redPositions[0];
+
+    // Try to move - should fail
+    try {
+        verb(new TokenMoved(
+            board_id: $board_state->id,
+            player_id: 1,
+            from_q: $fromPos['q'],
+            from_r: $fromPos['r'],
+            to_q: $toPos['q'],
+            to_r: $toPos['r']
+        ));
+        expect(true)->toBeFalse('Expected exception to be thrown');
+    } catch (\Throwable $e) {
+        expect($e->getMessage())->toContain('already occupied');
+    }
+});
+
+test('cannot move token to non-adjacent position', function () {
+    $game_state = verb(new GameCreated)->state(GameState::class);
+    $board_state = verb(new BoardCreated(game_id: $game_state->id))->state(BoardState::class);
+
+    $player = verb(new PlayerJoined(game_id: $game_state->id, player_id: 1, name: 'Player 1'))->state(PlayerState::class);
+    verb(new TokensPlaced(board_id: $board_state->id, player_id: 1));
+    $board_state = BoardState::load($board_state->id);
+
+    // Get a starting position
+    $bluePositions = $board_state->getStartingPositionsForColor('blue');
+    $fromPos = $bluePositions[0];
+
+    // Try to move to a non-adjacent position (center)
+    try {
+        verb(new TokenMoved(
+            board_id: $board_state->id,
+            player_id: 1,
+            from_q: $fromPos['q'],
+            from_r: $fromPos['r'],
+            to_q: 0,
+            to_r: 0
+        ));
+        expect(true)->toBeFalse('Expected exception to be thrown');
+    } catch (\Throwable $e) {
+        expect($e->getMessage())->toContain('not adjacent');
+    }
 });
