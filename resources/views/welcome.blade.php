@@ -12,13 +12,15 @@
 
         @vite(['resources/css/app.css', 'resources/js/app.js'])
     </head>
-    <body class="bg-[#FDFDFC] dark:bg-[#0a0a0a] text-[#1b1b18] flex p-6 lg:p-8 items-center lg:justify-center min-h-screen flex-col">
-        <svg id="board" width="800" height="800"
+    <body class="bg-[#FDFDFC] dark:bg-[#0a0a0a] text-[#1b1b18] flex p-6 items-center min-h-screen flex-col">
+        <svg id="board" 
+        class="w-full h-auto max-w-[800px] max-h-[800px]"
         viewBox="0 0 800 800"
+        preserveAspectRatio="xMidYMid meet"
         xmlns="http://www.w3.org/2000/svg"></svg>
 
    <script>
-     const s = 25; // hex radius
+     const s = 30; // hex radius
      const svg = document.getElementById("board");
 
      function axialToPixel(q, r) {
@@ -46,6 +48,18 @@
        hex.setAttribute("stroke", "#004d40");
        hex.setAttribute("stroke-width", "1.2");
        svg.appendChild(hex);
+
+       // Add text label with coordinates
+       const text = document.createElementNS("http://www.w3.org/2000/svg", "text");
+       text.setAttribute("x", x + 400);
+       text.setAttribute("y", y + 400);
+       text.setAttribute("text-anchor", "middle");
+       text.setAttribute("dominant-baseline", "middle");
+       text.setAttribute("font-size", "16");
+       text.setAttribute("fill", "#1b1b18");
+       text.setAttribute("font-weight", "500");
+       text.textContent = `${q},${r}`;
+       svg.appendChild(text);
      }
 
      // Determine if a coordinate (q, r) is part of the Chinese Checkers star
