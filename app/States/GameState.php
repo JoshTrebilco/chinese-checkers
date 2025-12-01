@@ -24,6 +24,8 @@ class GameState extends State
 
     public CarbonImmutable $created_at;
 
+    public ?int $board_id = null;
+
     /** @return Collection<int, PlayerState> */
     public function players(): Collection
     {
@@ -77,9 +79,8 @@ class GameState extends State
         return $this;
     }
 
-    /** @return Collection<int, BoardState> */
-    public function boards(): Collection
+    public function board(): ?BoardState
     {
-        return $this->players()->map(fn (PlayerState $player) => $player->board())->filter();
+        return $this->board_id ? BoardState::load($this->board_id) : null;
     }
 }

@@ -4,7 +4,6 @@ use App\Events\Setup\BoardCreated;
 use App\Events\Setup\GameCreated;
 use App\States\BoardState;
 use App\States\GameState;
-use App\States\PlayerState;
 use Thunk\Verbs\Facades\Verbs;
 
 beforeEach(function () {
@@ -13,14 +12,12 @@ beforeEach(function () {
 });
 
 test('board is generated with all valid hexagonal coordinates', function () {
-    $player_id = snowflake_id();
-
     $game_state = verb(new GameCreated)->state(GameState::class);
 
-    // Create a board for the player
-    $board_state = verb(new BoardCreated(player_id: $player_id))->state(BoardState::class);
+    // Create a board for the game
+    $board_state = verb(new BoardCreated(game_id: $game_state->id))->state(BoardState::class);
 
-    expect($board_state->player_id)->toBe($player_id)
+    expect($board_state->game_id)->toBe($game_state->id)
         ->and($board_state->getTotalPositions())->toBeGreaterThan(0);
 
     // Verify that the board contains valid positions
@@ -42,8 +39,8 @@ test('board is generated with all valid hexagonal coordinates', function () {
 });
 
 test('isOnBoard correctly identifies center hexagon positions', function () {
-    $player_id = snowflake_id();
-    $board_state = verb(new BoardCreated(player_id: $player_id))->state(BoardState::class);
+    $game_state = verb(new GameCreated)->state(GameState::class);
+    $board_state = verb(new BoardCreated(game_id: $game_state->id))->state(BoardState::class);
 
     // Test center hexagon (radius 4)
     for ($q = -4; $q <= 4; $q++) {
@@ -57,8 +54,8 @@ test('isOnBoard correctly identifies center hexagon positions', function () {
 });
 
 test('isOnBoard correctly identifies triangular region positions', function () {
-    $player_id = snowflake_id();
-    $board_state = verb(new BoardCreated(player_id: $player_id))->state(BoardState::class);
+    $game_state = verb(new GameCreated)->state(GameState::class);
+    $board_state = verb(new BoardCreated(game_id: $game_state->id))->state(BoardState::class);
 
     // Test North region (r <= -5 && r >= -8, q >= 1 && q <= 4)
     expect($board_state->isOnBoard(1, -5))->toBeTrue()
@@ -82,8 +79,8 @@ test('isOnBoard correctly identifies triangular region positions', function () {
 });
 
 test('board contains exactly 121 valid positions', function () {
-    $player_id = snowflake_id();
-    $board_state = verb(new BoardCreated(player_id: $player_id))->state(BoardState::class);
+    $game_state = verb(new GameCreated)->state(GameState::class);
+    $board_state = verb(new BoardCreated(game_id: $game_state->id))->state(BoardState::class);
 
     // Count all valid positions manually
     $count = 0;
@@ -100,10 +97,8 @@ test('board contains exactly 121 valid positions', function () {
 });
 
 test('board cells are properly initialized', function () {
-    $player_id = snowflake_id();
-
     $game_state = verb(new GameCreated)->state(GameState::class);
-    $board_state = verb(new BoardCreated(player_id: $player_id))->state(BoardState::class);
+    $board_state = verb(new BoardCreated(game_id: $game_state->id))->state(BoardState::class);
 
     $cells = $board_state->getCells();
 

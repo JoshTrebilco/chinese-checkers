@@ -8,7 +8,7 @@ class BoardState extends State
 {
     public array $cells = [];
 
-    public ?int $player_id = null;
+    public ?int $game_id = null;
 
     /**
      * Initialize the board with all valid hexagonal coordinates
@@ -115,8 +115,8 @@ class BoardState extends State
         return count($this->cells);
     }
 
-    public function player(): ?PlayerState
+    public function game(): ?GameState
     {
-        return $this->player_id ? PlayerState::load($this->player_id) : null;
+        return $this->game_id ? GameState::load($this->game_id) : null;
     }
 }

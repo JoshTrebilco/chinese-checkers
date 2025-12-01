@@ -5,43 +5,41 @@ namespace App\Events\Setup;
 use App\Events\BroadcastEvent;
 use App\States\BoardState;
 use App\States\GameState;
-use App\States\PlayerState;
 use Thunk\Verbs\Attributes\Autodiscovery\AppliesToState;
 use Thunk\Verbs\Event;
 
 #[AppliesToState(BoardState::class)]
-#[AppliesToState(PlayerState::class)]
+#[AppliesToState(GameState::class)]
 class BoardCreated extends Event
 {
     public function __construct(
-        public int $player_id,
+        public int $game_id,
         public ?int $board_id = null,
     ) {}
 
-    public function validatePlayer(PlayerState $player)
+    public function validateGame(GameState $game)
     {
         $this->assert(
-            $player->board_id === null,
-            'Player already has a board.'
+            $game->board_id === null,
+            'Game already has a board.'
         );
     }
 
     public function applyToBoard(BoardState $board)
     {
-        $board->player_id = $this->player_id;
+        $board->game_id = $this->game_id;
         $board->setup();
     }
 
-    public function applyToPlayer(PlayerState $player)
+    public function applyToGame(GameState $game)
     {
-        $player->board_id = $this->board_id;
+        $game->board_id = $this->board_id;
     }
 
-    public function handle(GameState $gameState, PlayerState $player)
+    public function handle(GameState $gameState)
     {
         $broadcastEvent = new BroadcastEvent;
         $broadcastEvent->setGameState($gameState);
-        $broadcastEvent->setPlayerState($player);
         $broadcastEvent->setEvent(self::class);
         event($broadcastEvent);
     }
