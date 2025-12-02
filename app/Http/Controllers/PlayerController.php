@@ -62,15 +62,11 @@ class PlayerController extends Controller
             'to_r' => 'required|integer',
         ]);
 
-        $game = GameState::load($game_id);
-        $board = $game->board();
-
-        if (! $board) {
-            return back()->withErrors('Board is not ready yet.');
-        }
+        $game_state = GameState::load($game_id);
 
         verb(new TokenMoved(
-            board_id: $board->id,
+            game_id: $game_id,
+            board_id: $game_state->board_id,
             player_id: $player_id,
             from_q: $validated['from_q'],
             from_r: $validated['from_r'],

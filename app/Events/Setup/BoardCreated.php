@@ -13,6 +13,7 @@ use Thunk\Verbs\Event;
 class BoardCreated extends Event
 {
     public function __construct(
+        public int $game_id,
         public ?int $board_id = null,
     ) {}
 

@@ -4,14 +4,18 @@ namespace App\Events\Gameplay;
 
 use App\Events\BroadcastEvent;
 use App\States\BoardState;
+use App\States\GameState;
 use App\States\PlayerState;
 use Thunk\Verbs\Attributes\Autodiscovery\AppliesToState;
 use Thunk\Verbs\Event;
 
+#[AppliesToState(GameState::class)]
 #[AppliesToState(BoardState::class)]
+#[AppliesToState(PlayerState::class)]
 class TokenMoved extends Event
 {
     public function __construct(
+        public int $game_id,
         public int $board_id,
         public int $player_id,
         public int $from_q,
@@ -19,6 +23,12 @@ class TokenMoved extends Event
         public int $to_q,
         public int $to_r,
     ) {}
+
+    public function validateGame(GameState $game)
+    {
+        $this->assert($game->isInProgress(), 'The game is not in progress.');
+        $this->assert($game->last_player_id !== $this->player_id, 'It is not your turn.');
+    }
 
     public function validateBoard(BoardState $board)
     {
@@ -77,15 +87,14 @@ class TokenMoved extends Event
         }
     }
 
-    public function handle(BoardState $boardState)
+    public function handle(GameState $gameState, BoardState $boardState, PlayerState $playerState)
     {
         $broadcastEvent = new BroadcastEvent;
-        $game = $boardState->game();
-        if ($game) {
-            $broadcastEvent->setGameState($game);
-        }
+        $broadcastEvent->setGameState($gameState);
         $broadcastEvent->setBoardState($boardState);
-        
+        $broadcastEvent->setPlayerState($playerState);
+
+        $broadcastEvent->setEvent(self::class);
         // Set event as object with type and move data
         $broadcastEvent->setEvent([
             'type' => self::class,
@@ -95,9 +104,7 @@ class TokenMoved extends Event
             'to_r' => $this->to_r,
             'player_id' => $this->player_id,
         ]);
-        
-        $player = PlayerState::load($this->player_id);
-        $broadcastEvent->setPlayerState($player);
+
         event($broadcastEvent);
     }
 }

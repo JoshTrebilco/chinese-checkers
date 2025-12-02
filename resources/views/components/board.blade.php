@@ -330,44 +330,21 @@
 
             const { playerId, q: fromQ, r: fromR } = this.selectedToken;
 
-            // Get CSRF token
-            const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') ||
-                             document.querySelector('input[name="_token"]')?.value;
-
-            if (!csrfToken) {
-                console.error('CSRF token not found');
-                return;
-            }
-
             try {
-                const response = await fetch(`/games/${this.gameId}/players/${playerId}/move-token`, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'X-CSRF-TOKEN': csrfToken,
-                        'Accept': 'application/json',
-                    },
-                    body: JSON.stringify({
-                        from_q: fromQ,
-                        from_r: fromR,
-                        to_q: toQ,
-                        to_r: toR,
-                    }),
+                const url = '{{ $auth_player_id ? route('players.moveToken', ['game_id' => $game->id, 'player_id' => $auth_player_id]) : null }}';
+                const response = await axios.post(url, {
+                    _token: '{{ csrf_token() }}',
+                    from_q: fromQ,
+                    from_r: fromR,
+                    to_q: toQ,
+                    to_r: toR,
                 });
-
-                if (!response.ok) {
-                    const error = await response.json();
-                    console.error('Move failed:', error);
-                    alert('Move failed: ' + (error.message || 'Unknown error'));
-                    return;
-                }
-
+                
                 // Clear selection - the animation will be handled by the event
                 this.clearHighlights();
                 this.selectedToken = null;
             } catch (error) {
-                console.error('Error moving token:', error);
-                alert('Error moving token. Please try again.');
+                console.error('Error moving token:', error.response.data);
             }
         }
 
