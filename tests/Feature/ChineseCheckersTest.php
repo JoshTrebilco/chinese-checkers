@@ -568,7 +568,8 @@ test('TokenState position is updated when token is moved', function () {
         from_q: $originalQ,
         from_r: $originalR,
         to_q: $toPos['q'],
-        to_r: $toPos['r']
+        to_r: $toPos['r'],
+        token_id: $token->id
     ));
     
     // Reload token and verify position updated
