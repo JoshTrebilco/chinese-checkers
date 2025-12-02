@@ -26,6 +26,8 @@ class GameState extends State
 
     public ?int $board_id = null;
 
+    public array $available_colors = ['blue', 'red', 'yellow', 'green', 'teal', 'purple'];
+
     /** @return Collection<int, PlayerState> */
     public function players(): Collection
     {

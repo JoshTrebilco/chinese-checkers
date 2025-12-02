@@ -6,21 +6,26 @@
                 <div class="flex-shrink-0">
                     <div class="w-10 h-10 bg-purple-900/50 rounded-full flex items-center justify-center">
                         <svg class="w-6 h-6 text-purple-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 5a2 2 0 1 0 0-4 2 2 0 0 0 0 4zm0 0v3m-4 1h8m-8 0c0 2 1.5 3 4 3s4-1 4-3m-8 0l-1 8h10l-1-8" />
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M12 5a2 2 0 1 0 0-4 2 2 0 0 0 0 4zm0 0v3m-4 1h8m-8 0c0 2 1.5 3 4 3s4-1 4-3m-8 0l-1 8h10l-1-8" />
                         </svg>
                     </div>
                 </div>
                 <h3 class="text-lg font-semibold text-blue-300">
-                    Join Game
+                    Choose Your Token
                 </h3>
             </div>
-            <form action="{{ route('players.join', ['game_id' => $game->id]) }}" method="post">
-                @csrf
-                <button type="submit"
-                    class="w-full bg-gradient-to-r from-purple-600 to-blue-500 text-white rounded-lg px-4 py-3 font-semibold transform transition hover:translate-y-[-2px]">
-                    Join Game
-                </button>
-            </form>
+            <div class="flex justify-center gap-4">
+                @foreach($game->available_colors as $color)
+                    <form action="{{ route('players.join', ['game_id' => $game->id]) }}" method="post">
+                        @csrf
+                        <input type="hidden" name="color" value="{{ $color }}">
+                        <button type="submit" class="transform transition hover:scale-110">
+                            <x-token :color="$color" :size="50" />
+                        </button>
+                    </form>
+                @endforeach
+            </div>
         </div>
     @endif
 
@@ -66,15 +71,16 @@
             </div>
         </div>
 
-        @if(count($game->player_ids) >= 2 && !$game->started)
-            <form action="{{ route('players.placeTokens', ['game_id' => $game->id, 'player_id' => $auth_player_id]) }}" method="post">
-                @csrf
-                <button type="submit"
-                    class="w-full bg-gradient-to-r from-purple-600 to-blue-500 text-white rounded-lg px-4 py-3 font-semibold transform transition hover:translate-y-[-2px]">
-                    Place Tokens
-                </button>
-            </form>
-        @endif
+    @endif
+
+    @if ($game->created && $game->hasAllPlayersJoined() && ! $game->isInProgress())
+        <form action="{{ route('players.startGame', ['game_id' => $game->id]) }}" method="post">
+            @csrf
+            <button type="submit"
+                class="w-full bg-gradient-to-r from-purple-600 to-blue-500 text-white rounded-lg px-4 py-3 font-semibold transform transition hover:translate-y-[-2px]">
+                Start Game
+            </button>
+        </form>
     @endif
 
     @if(! $game->hasPlayer($auth_player_id) && $game->isInProgress())
@@ -100,7 +106,7 @@
             <ul class="space-y-3" id="players-list">
                 @foreach ($game->players() as $player)
                     <li class="flex items-center space-x-3" data-player-id="{{ $player->id }}">
-                        <div class="w-6 h-6 rounded-full bg-{{ $player->color }}-500"></div>
+                        <x-token :color="$player->color" :size="25" />
 
                         <div class="flex items-center space-x-2 flex-grow">
                             <span class="text-blue-200">{{ $player->name }}</span>

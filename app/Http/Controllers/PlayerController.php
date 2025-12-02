@@ -3,9 +3,9 @@
 namespace App\Http\Controllers;
 
 use App\Events\Gameplay\TokenMoved;
+use App\Events\Setup\GameStarted;
+use App\Events\Setup\PlayerColorSelected;
 use App\Events\Setup\PlayerJoinedGame;
-use App\Events\Setup\TokensPlaced;
-use App\States\BoardState;
 use App\States\GameState;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Controller;
@@ -20,6 +20,12 @@ class PlayerController extends Controller
 
         $user->update(['current_player_id' => $player_id]);
 
+        verb(new PlayerColorSelected(
+            game_id: $game_id,
+            player_id: $player_id,
+            color: $request->color,
+        ));
+
         verb(new PlayerJoinedGame(
             game_id: $game_id,
             player_id: $player_id,
@@ -29,21 +35,14 @@ class PlayerController extends Controller
         return redirect()->route('games.show', $game_id);
     }
 
-    public function placeTokens(Request $request, int $game_id, int $player_id)
+    public function startGame(int $game_id)
     {
-        if (Auth::user()->current_player_id != $player_id) {
-            return redirect()->route('games.show', $game_id);
-        }
-
         $game = GameState::load($game_id);
-        $board = $game->board();
 
-        if (! $board) {
-            return back()->withErrors('Board is not ready yet.');
-        }
+        $player_id = $game->players()->random()->id;
 
-        verb(new TokensPlaced(
-            board_id: $board->id,
+        verb(new GameStarted(
+            game_id: $game_id,
             player_id: $player_id,
         ));
 
@@ -82,4 +81,3 @@ class PlayerController extends Controller
         return response()->json(['success' => true]);
     }
 }
-

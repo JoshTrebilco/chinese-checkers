@@ -38,25 +38,26 @@ class PlayerJoinedGame extends Event
     {
         $player->name = $this->name;
         $player->setup = true;
-        
-        // Auto-assign color based on join order
-        $game = GameState::load($this->game_id);
-        $colors = ['blue', 'red', 'yellow', 'green', 'teal', 'purple'];
-        $usedColors = collect($game->player_ids)
-            ->reject(fn (int $id) => $id === $this->player_id) // Exclude current player
-            ->map(fn (int $id) => PlayerState::load($id))
-            ->pluck('color')
-            ->filter()
-            ->toArray();
-        
-        $availableColors = array_values(array_diff($colors, $usedColors));
-        $player->color = $availableColors[0] ?? null;
     }
 
     public function applyToGame(GameState $game)
     {
         if (! in_array($this->player_id, $game->player_ids)) {
             $game->player_ids[] = $this->player_id;
+        }
+    }
+
+    public function fired(GameState $game)
+    {
+        $board = $game->board();
+        $player = PlayerState::load($this->player_id);
+
+        // Only place tokens if board exists and player has a color
+        if ($board && $player->color) {
+            TokensPlaced::fire(
+                board_id: $board->id,
+                player_id: $this->player_id,
+            );
         }
     }
 

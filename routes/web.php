@@ -15,6 +15,6 @@ Route::get('/games/{game_id}', [GameController::class, 'show'])->name('games.sho
 
 Route::middleware('auth')->group(function () {
     Route::post('/games/{game_id}/join', [PlayerController::class, 'join'])->name('players.join');
-    Route::post('/games/{game_id}/players/{player_id}/place-tokens', [PlayerController::class, 'placeTokens'])->name('players.placeTokens');
+    Route::post('/games/{game_id}/start-game', [PlayerController::class, 'startGame'])->name('players.startGame');
     Route::post('/games/{game_id}/players/{player_id}/move-token', [PlayerController::class, 'moveToken'])->name('players.moveToken');
 });
