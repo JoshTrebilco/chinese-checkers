@@ -13,7 +13,7 @@
                 'fill-green-500/20' => $color === 'green',
                 'fill-red-500/20' => $color === 'red',
                 'fill-yellow-500/20' => $color === 'yellow',
-                'fill-teal-500/20' => $color === 'teal',
+                'fill-orange-500/20' => $color === 'orange',
                 'fill-purple-500/20' => $color === 'purple',
             ])
         />
@@ -28,7 +28,7 @@
                 'fill-green-500/50 stroke-green-400' => $color === 'green',
                 'fill-red-500/50 stroke-red-400' => $color === 'red',
                 'fill-yellow-500/50 stroke-yellow-400' => $color === 'yellow',
-                'fill-teal-500/50 stroke-teal-400' => $color === 'teal',
+                'fill-orange-500/50 stroke-orange-400' => $color === 'orange',
                 'fill-purple-500/50 stroke-purple-400' => $color === 'purple',
             ])
         />
@@ -43,7 +43,7 @@
                 'stroke-green-300' => $color === 'green',
                 'stroke-red-300' => $color === 'red',
                 'stroke-yellow-300' => $color === 'yellow',
-                'stroke-teal-300' => $color === 'teal',
+                'stroke-orange-300' => $color === 'orange',
                 'stroke-purple-300' => $color === 'purple',
             ])
         />

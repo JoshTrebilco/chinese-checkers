@@ -141,7 +141,7 @@ test('starting positions are calculated correctly for each color', function () {
     $game_state = verb(new GameCreated)->state(GameState::class);
     $board_state = verb(new BoardCreated(game_id: $game_state->id))->state(BoardState::class);
 
-    $colors = ['blue', 'red', 'yellow', 'green', 'teal', 'purple'];
+    $colors = ['blue', 'red', 'yellow', 'green', 'orange', 'purple'];
 
     foreach ($colors as $color) {
         $positions = $board_state->getStartingPositionsForColor($color);

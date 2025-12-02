@@ -207,7 +207,7 @@
                 green: { glow: 'fill-green-500/20', bg: 'fill-green-500/50 stroke-green-400', border: 'stroke-green-300' },
                 red: { glow: 'fill-red-500/20', bg: 'fill-red-500/50 stroke-red-400', border: 'stroke-red-300' },
                 yellow: { glow: 'fill-yellow-500/20', bg: 'fill-yellow-500/50 stroke-yellow-400', border: 'stroke-yellow-300' },
-                teal: { glow: 'fill-teal-500/20', bg: 'fill-teal-500/50 stroke-teal-400', border: 'stroke-teal-300' },
+                orange: { glow: 'fill-orange-500/20', bg: 'fill-orange-500/50 stroke-orange-400', border: 'stroke-orange-300' },
                 purple: { glow: 'fill-purple-500/20', bg: 'fill-purple-500/50 stroke-purple-400', border: 'stroke-purple-300' }
             };
             

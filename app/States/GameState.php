@@ -26,7 +26,7 @@ class GameState extends State
     
     public CarbonImmutable $created_at;
 
-    public array $available_colors = ['blue', 'red', 'yellow', 'green', 'teal', 'purple'];
+    public array $available_colors = ['blue', 'red', 'yellow', 'green', 'orange', 'purple'];
 
     public function board(): ?BoardState
     {

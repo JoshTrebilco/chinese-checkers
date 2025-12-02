@@ -126,7 +126,7 @@ class BoardState extends State
     /**
      * Get the 10 starting positions for a given color
      *
-     * @param string $color The player color (blue, red, yellow, green, teal, purple)
+     * @param string $color The player color (blue, red, yellow, green, orange, purple)
      * @return array Array of ['q' => int, 'r' => int] positions
      */
     public function getStartingPositionsForColor(string $color): array
@@ -141,22 +141,22 @@ class BoardState extends State
                 
                 $matches = false;
                 switch ($color) {
-                    case 'blue': // North
+                    case 'red': // North
                         $matches = $r <= -5 && $r >= -8 && $q >= 1 && $q <= 4 && $sum >= 0 && $sum <= 4;
                         break;
-                    case 'red': // South
+                    case 'blue': // South
                         $matches = $r >= 5 && $r <= 8 && $q >= -4 && $q <= -1 && $sum >= -4 && $sum <= 0;
                         break;
                     case 'yellow': // NE
                         $matches = $q >= 5 && $q <= 8 && $r >= -4 && $r <= 0 && $sum >= -4 && $sum <= 0;
                         break;
-                    case 'green': // SW
+                    case 'purple': // SW
                         $matches = $q <= -5 && $q >= -8 && $r >= 0 && $r <= 4 && $sum <= 4 && $sum >= 0;
                         break;
-                    case 'teal': // SE
+                    case 'green': // SE
                         $matches = $sum <= -5 && $sum >= -8 && $r <= 4 && $r >= -4 && $q >= -4 && $q <= 4;
                         break;
-                    case 'purple': // NW
+                    case 'orange': // NW
                         $matches = $sum >= 5 && $sum <= 8 && $r <= 4 && $r >= -4 && $q >= -4 && $q <= 4;
                         break;
                 }
@@ -254,12 +254,12 @@ class BoardState extends State
     public function getColorValue(string $color, string $type = 'fill'): string
     {
         $colors = [
-            'blue' => ['fill' => '#3b82f6', 'stroke' => '#60a5fa', 'border' => '#93c5fd'],
-            'red' => ['fill' => '#ef4444', 'stroke' => '#f87171', 'border' => '#fca5a5'],
-            'yellow' => ['fill' => '#eab308', 'stroke' => '#fbbf24', 'border' => '#fde68a'],
-            'green' => ['fill' => '#22c55e', 'stroke' => '#4ade80', 'border' => '#86efac'],
-            'teal' => ['fill' => '#14b8a6', 'stroke' => '#2dd4bf', 'border' => '#5eead4'],
-            'purple' => ['fill' => '#a855f7', 'stroke' => '#c084fc', 'border' => '#c4b5fd'],
+            'blue' => ['fill' => '#3b82f6', 'stroke' => '#60a5fa', 'border' => '#bae6fd'],      // Tailwind blue-500, blue-400, blue-200
+            'red' => ['fill' => '#ef4444', 'stroke' => '#f87171', 'border' => '#fecaca'],        // Tailwind red-500, red-400, red-200
+            'yellow' => ['fill' => '#eab308', 'stroke' => '#fde047', 'border' => '#fef08a'],     // Tailwind yellow-500, yellow-300, yellow-200
+            'green' => ['fill' => '#22c55e', 'stroke' => '#4ade80', 'border' => '#bbf7d0'],      // Tailwind green-500, green-400, green-200
+            'orange' => ['fill' => '#f59e42', 'stroke' => '#fdba74', 'border' => '#ffedd5'],     // Tailwind orange-500, orange-300, orange-100
+            'purple' => ['fill' => '#a855f7', 'stroke' => '#c084fc', 'border' => '#ddd6fe'],     // Tailwind purple-500, purple-400, purple-200
         ];
         
         return $colors[$color][$type] ?? $colors['blue'][$type];

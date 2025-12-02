@@ -45,24 +45,21 @@
                 $r = $cell['r'];
                 $sum = -$q - $r;
                 
-                // Determine color based on region - Asian theme
-                $fill = '#1e293b'; // Default dark
-                if ($r <= -5) $fill = '#1e40af'; // North - deep blue
-                elseif ($r >= 5) $fill = '#dc2626'; // South - deep red
-                elseif ($q >= 5) $fill = '#d97706'; // NE - amber
-                elseif ($q <= -5) $fill = '#059669'; // SW - emerald
-                elseif ($sum <= -5) $fill = '#0891b2'; // SE - cyan
-                elseif ($sum >= 5) $fill = '#b45309'; // NW - amber-orange
-                else $fill = '#475569'; // Center
+                if ($r <= -5) $fill = '#dc2626'; // North - red-600
+                elseif ($r >= 5) $fill = '#2563eb'; // South - blue-600
+                elseif ($q >= 5) $fill = '#eab308'; // NE - yellow-600
+                elseif ($q <= -5) $fill = '#9333ea'; // SW - purple-600
+                elseif ($sum <= -5) $fill = '#16a34a'; // SE - green-600
+                elseif ($sum >= 5) $fill = '#f97316'; // NW - orange-600
+                else $fill = '#e5e5e5'; // Center
             @endphp
             
             <g class="hex-cell" data-q="{{ $q }}" data-r="{{ $r }}" data-piece="{{ $cell['piece'] ?? 'null' }}">
                 <polygon 
                     class="hex-polygon"
                     fill="{{ $fill }}"
-                    fill-opacity="0.3"
-                    stroke="#64748b"
-                    stroke-width="1"
+                    stroke="#0f172a"
+                    stroke-width="2"
                     points="{{ $board->getHexPoints($q, $r) }}"
                 />
             </g>
@@ -91,7 +88,7 @@
                         r="18"
                         class="token-glow"
                         fill="{{ $board->getColorValue($color, 'fill') }}"
-                        fill-opacity="0.2"
+                        fill-opacity="0.3"
                     />
                     <!-- Token background -->
                     <circle
@@ -100,7 +97,7 @@
                         r="15"
                         class="token-bg"
                         fill="{{ $board->getColorValue($color, 'fill') }}"
-                        fill-opacity="0.5"
+                        fill-opacity="0.8"
                         stroke="{{ $board->getColorValue($color, 'stroke') }}"
                         stroke-width="2"
                     />
