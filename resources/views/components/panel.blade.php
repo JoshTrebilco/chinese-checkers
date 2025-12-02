@@ -98,34 +98,54 @@
             </div>
         </div>
     @endif
+</div>
 
-    <div class="grid gap-6 grid-cols-2 lg:grid-cols-1">
-        <!-- Players List -->
-        <div class="bg-slate-900/50 backdrop-blur-sm rounded-2xl p-6 border border-red-800/50 shadow-xl">
-            <h3 class="text-lg font-semibold text-amber-300 mb-4">Masters</h3>
-            <ul class="space-y-3" id="players-list">
+<!-- Fixed Bottom Players Bar -->
+<div id="players-bar" class="fixed bottom-0 left-0 right-0 z-50 bg-slate-900/95 backdrop-blur-sm border-t border-red-800/50 shadow-2xl">
+    <!-- Collapsed State - Shows Active Player's Turn -->
+    <button 
+        id="players-bar-toggle" 
+        class="w-full px-4 py-3 flex items-center justify-between hover:bg-slate-800/50 transition-colors"
+    >
+        <div class="flex items-center space-x-3">
+            <span class="text-sm text-amber-300/80">Current Turn:</span>
+            <div id="active-player-display" class="flex items-center space-x-2">
+                @php
+                    $activePlayer = $game->activePlayer();
+                @endphp
+                @if($activePlayer)
+                    <x-token :color="$activePlayer->color" :size="24" />
+                    <span class="text-amber-200 font-medium" id="active-player-name">{{ $activePlayer->name }}</span>
+                @else
+                    <span class="text-amber-200/60 font-medium">Waiting...</span>
+                @endif
+            </div>
+        </div>
+        <svg 
+            id="players-bar-chevron" 
+            class="w-5 h-5 text-amber-300 transition-transform" 
+            fill="none" 
+            stroke="currentColor" 
+            viewBox="0 0 24 24"
+        >
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+        </svg>
+    </button>
+
+    <!-- Expanded State - Shows All Players -->
+    <div id="players-bar-content" class="hidden border-t border-red-800/30">
+        <div class="px-4 py-3">
+            <h3 class="text-sm font-semibold text-amber-300 mb-3">Masters</h3>
+            <ul class="space-y-2" id="players-list">
                 @foreach ($game->players() as $player)
                     <li class="flex items-center space-x-3" data-player-id="{{ $player->id }}">
-                        <x-token :color="$player->color" :size="25" />
-
-                        <div class="flex items-center space-x-2 flex-grow">
-                            <span class="text-amber-200">{{ $player->name }}</span>
-
-                            <div class="flex items-center gap-2 ml-auto">
-                                @if ($player->id == $auth_player_id)
-                                    <span class="inline-flex items-center rounded-md bg-amber-400/10 px-2 py-1 text-xs font-medium text-amber-400 ring-1 ring-inset ring-amber-400/30">
-                                        You
-                                    </span>
-                                @endif
-
-                                @if ($player->id == $game->activePlayer()?->id)
-                                    <svg class="w-4 h-4 text-amber-400 animate-spin" fill="none" viewBox="0 0 24 24">
-                                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                                    </svg>
-                                @endif
-                            </div>
-                        </div>
+                        <x-token :color="$player->color" :size="20" />
+                        <span class="text-amber-200 text-sm flex-grow">{{ $player->name }}</span>
+                        @if ($player->id == $auth_player_id)
+                            <span class="inline-flex items-center rounded-md bg-amber-400/10 px-2 py-1 text-xs font-medium text-amber-400 ring-1 ring-inset ring-amber-400/30">
+                                You
+                            </span>
+                        @endif
                     </li>
                 @endforeach
             </ul>
@@ -158,32 +178,61 @@
         }
 
         updateUI() {
-            // Update active player indicator
-            const playersList = document.getElementById('players-list');
-            if (!playersList) return;
+            // Update active player display in collapsed state
+            const activePlayerDisplay = document.getElementById('active-player-display');
+            if (!activePlayerDisplay) return;
 
-            const items = playersList.querySelectorAll('li');
-            items.forEach(item => {
-                const playerId = item.getAttribute('data-player-id');
-                const spinner = item.querySelector('svg.animate-spin');
+            if (this.activePlayerId && this.activePlayerId !== 'null') {
+                const activePlayer = this.players.find(p => String(p.id) === String(this.activePlayerId));
+                if (activePlayer) {
+                    activePlayerDisplay.innerHTML = this.generateTokenHTML(activePlayer.color, 24) + 
+                        `<span class="text-amber-200 font-medium" id="active-player-name">${activePlayer.name}</span>`;
+                }
+            } else {
+                activePlayerDisplay.innerHTML = '<span class="text-amber-200/60 font-medium">Waiting...</span>';
+            }
+        }
+
+        generateTokenHTML(color, size) {
+            const colorClasses = {
+                blue: { glow: 'fill-blue-500/20', bg: 'fill-blue-500/50 stroke-blue-400', border: 'stroke-blue-300' },
+                green: { glow: 'fill-green-500/20', bg: 'fill-green-500/50 stroke-green-400', border: 'stroke-green-300' },
+                red: { glow: 'fill-red-500/20', bg: 'fill-red-500/50 stroke-red-400', border: 'stroke-red-300' },
+                yellow: { glow: 'fill-yellow-500/20', bg: 'fill-yellow-500/50 stroke-yellow-400', border: 'stroke-yellow-300' },
+                teal: { glow: 'fill-teal-500/20', bg: 'fill-teal-500/50 stroke-teal-400', border: 'stroke-teal-300' },
+                purple: { glow: 'fill-purple-500/20', bg: 'fill-purple-500/50 stroke-purple-400', border: 'stroke-purple-300' }
+            };
+            
+            const colors = colorClasses[color] || colorClasses.blue;
+            const center = size / 2;
+            const glowRadius = size * 0.36;
+            const tokenRadius = size * 0.3;
+            
+            return `<svg style="width: ${size}px; height: ${size}px;" viewBox="0 0 ${size} ${size}">
+                <g class="player-token">
+                    <circle cx="${center}" cy="${center}" r="${glowRadius}" class="transition-opacity ${colors.glow}" />
+                    <circle cx="${center}" cy="${center}" r="${tokenRadius}" class="transition-opacity ${colors.bg}" />
+                    <circle cx="${center}" cy="${center}" r="${tokenRadius}" class="fill-none stroke-[3] ${colors.border}" />
+                </g>
+            </svg>`;
+        }
+
+        setupPlayersBarToggle() {
+            const toggle = document.getElementById('players-bar-toggle');
+            const content = document.getElementById('players-bar-content');
+            const chevron = document.getElementById('players-bar-chevron');
+            
+            if (!toggle || !content || !chevron) return;
+
+            toggle.addEventListener('click', () => {
+                const isExpanded = !content.classList.contains('hidden');
                 
-                if (String(playerId) === String(this.activePlayerId)) {
-                    if (!spinner) {
-                        // Add spinner if not present
-                        const indicator = document.createElement('svg');
-                        indicator.className = 'w-4 h-4 text-amber-400 animate-spin';
-                        indicator.setAttribute('fill', 'none');
-                        indicator.setAttribute('viewBox', '0 0 24 24');
-                        indicator.innerHTML = '<circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>';
-                        const actionsDiv = item.querySelector('.ml-auto');
-                        if (actionsDiv) {
-                            actionsDiv.appendChild(indicator);
-                        }
-                    }
+                if (isExpanded) {
+                    content.classList.add('hidden');
+                    chevron.classList.remove('rotate-180');
                 } else {
-                    if (spinner) {
-                        spinner.remove();
-                    }
+                    content.classList.remove('hidden');
+                    chevron.classList.add('rotate-180');
                 }
             });
         }
@@ -225,6 +274,7 @@
 
             this.updateUI();
             this.setupCopyButton();
+            this.setupPlayersBarToggle();
         }
     }
 
