@@ -6,18 +6,18 @@
 
 <x-layout>
     <!-- Header with Back Link -->
-    <div class="mb-6">
+    <div class="absolute top-0 left-0 p-4">
         <a href="{{ route('games.index') }}"
             class="inline-flex items-center space-x-2 text-amber-300 hover:translate-x-[-2px] transition-transform">
-            <svg class="w-5 h-5 rotate-180" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg class="w-4 h-4 rotate-180" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
             </svg>
-            <span class="text-2xl font-bold text-amber-300">Chinese Checkers</span>
+            <span class="text-base font-bold text-amber-300">Chinese Checkers</span>
         </a>
     </div>
 
     <!-- Game Board -->
-    <div class="mt-2 lg:mt-5 flex flex-col gap-6 lg:flex-row lg:items-start">
+    <div class="flex flex-col gap-3">
         @if($board)
             <x-board :board="$board" :game="$game" :channel="$channel" :auth_player_id="$auth_player_id" />
         @else

@@ -1,5 +1,5 @@
 @props(['game', 'auth_player_id', 'channel'])
-<div class="space-y-6">
+<div class="space-y-3">
     @if(! $game->hasPlayer($auth_player_id) && ! $game->isInProgress())
         <div class="bg-slate-900/50 backdrop-blur-sm rounded-2xl p-6 border border-red-800/50 shadow-xl">
             <div class="flex items-center space-x-3 mb-4">
@@ -29,11 +29,21 @@
         </div>
     @endif
 
+    @if ($game->created && $game->hasEnoughPlayers() && ! $game->isInProgress())
+        <form action="{{ route('players.startGame', ['game_id' => $game->id]) }}" method="post">
+            @csrf
+            <button type="submit"
+                class="w-full bg-linear-to-r from-red-600 to-amber-500 text-white rounded-lg px-4 py-3 font-semibold transform transition hover:translate-y-[-2px]">
+                Begin the Match
+            </button>
+        </form>
+    @endif
+
     @if ($game->hasPlayer($auth_player_id) && !$game->isInProgress())
         <!-- Share Game Section -->
-        <div class="bg-slate-900/50 backdrop-blur-sm rounded-2xl p-6 border border-red-800/50 shadow-xl">
+        <div class="bg-slate-900/50 backdrop-blur-sm rounded-2xl px-4 py-3 shadow-xl">
             <div class="flex items-center space-x-3 mb-4">
-                <div class="flex-shrink-0">
+                <div class="shrink-0">
                     <div class="w-10 h-10 bg-red-900/50 rounded-full flex items-center justify-center">
                         <svg class="w-6 h-6 text-amber-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" />
@@ -71,16 +81,6 @@
             </div>
         </div>
 
-    @endif
-
-    @if ($game->created && $game->hasEnoughPlayers() && ! $game->isInProgress())
-        <form action="{{ route('players.startGame', ['game_id' => $game->id]) }}" method="post">
-            @csrf
-            <button type="submit"
-                class="w-full bg-gradient-to-r from-red-600 to-amber-500 text-white rounded-lg px-4 py-3 font-semibold transform transition hover:translate-y-[-2px]">
-                Begin the Match
-            </button>
-        </form>
     @endif
 
     @if(! $game->hasPlayer($auth_player_id) && $game->isInProgress())
