@@ -21,12 +21,15 @@ class BroadcastEvent implements ShouldBroadcastNow
 
     public $boardState;
 
+    public $tokenState;
+
     public function __construct()
     {
         $this->event = null;
         $this->gameState = null;
         $this->playerState = null;
         $this->boardState = null;
+        $this->tokenState = null;
     }
 
     public function broadcastOn(): array
@@ -44,6 +47,7 @@ class BroadcastEvent implements ShouldBroadcastNow
             'gameState' => $this->gameState,
             'playerState' => $this->playerState,
             'boardState' => $this->boardState,
+            'tokenState' => $this->tokenState,
             'gameChannel' => Str::after(config('app.url'), 'https://').'.'.'game.'.$this->gameState->id,
         ];
 
@@ -90,6 +94,11 @@ class BroadcastEvent implements ShouldBroadcastNow
         return $this->boardState;
     }
 
+    public function getTokenState()
+    {
+        return $this->tokenState;
+    }
+
     public function setEvent($event)
     {
         $this->event = $event;
@@ -108,5 +117,10 @@ class BroadcastEvent implements ShouldBroadcastNow
     public function setBoardState($board)
     {
         $this->boardState = $board;
+    }
+
+    public function setTokenState($token)
+    {
+        $this->tokenState = $token;
     }
 }

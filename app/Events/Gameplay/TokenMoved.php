@@ -124,21 +124,14 @@ class TokenMoved extends Event
         $board->recalculateAllTokenMoves();
     }
 
-    public function handle(GameState $gameState, BoardState $boardState, PlayerState $playerState)
-    {
-        // Reload board to get updated token states
-        $boardState = BoardState::load($this->board_id);
-        
-        // Add tokens to boardState for frontend
-        $boardStateArray = (array) $boardState;
-        $boardStateArray['tokens'] = $boardState->getTokensArray();
-        
+    public function handle(GameState $gameState, BoardState $boardState, PlayerState $playerState, TokenState $tokenState)
+    {  
         $broadcastEvent = new BroadcastEvent;
         $broadcastEvent->setGameState($gameState);
-        $broadcastEvent->setBoardState((object) $boardStateArray);
+        $broadcastEvent->setBoardState($boardState);
         $broadcastEvent->setPlayerState($playerState);
-
-        $broadcastEvent->setEvent(self::class);
+        $broadcastEvent->setTokenState($tokenState);
+        // $broadcastEvent->setEvent(self::class);
         // Set event as object with type and move data
         $broadcastEvent->setEvent([
             'type' => self::class,
