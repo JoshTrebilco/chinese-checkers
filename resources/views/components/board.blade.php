@@ -14,9 +14,9 @@
             opacity: 0.8;
         }
         .player-token.selected .token-border {
-            stroke: #fbbf24 !important;
+            stroke: #f59e0b !important;
             stroke-width: 5 !important;
-            filter: drop-shadow(0 0 4px rgba(251, 191, 36, 0.6));
+            filter: drop-shadow(0 0 4px rgba(245, 158, 11, 0.6));
         }
         .move-highlight {
             cursor: pointer;
@@ -45,14 +45,14 @@
                 $r = $cell['r'];
                 $sum = -$q - $r;
                 
-                // Determine color based on region
+                // Determine color based on region - Asian theme
                 $fill = '#1e293b'; // Default dark
-                if ($r <= -5) $fill = '#3b82f6'; // North - blue
-                elseif ($r >= 5) $fill = '#ef4444'; // South - red
-                elseif ($q >= 5) $fill = '#eab308'; // NE - yellow
-                elseif ($q <= -5) $fill = '#22c55e'; // SW - green
-                elseif ($sum <= -5) $fill = '#14b8a6'; // SE - teal
-                elseif ($sum >= 5) $fill = '#a855f7'; // NW - purple
+                if ($r <= -5) $fill = '#1e40af'; // North - deep blue
+                elseif ($r >= 5) $fill = '#dc2626'; // South - deep red
+                elseif ($q >= 5) $fill = '#d97706'; // NE - amber
+                elseif ($q <= -5) $fill = '#059669'; // SW - emerald
+                elseif ($sum <= -5) $fill = '#0891b2'; // SE - cyan
+                elseif ($sum >= 5) $fill = '#b45309'; // NW - amber-orange
                 else $fill = '#475569'; // Center
             @endphp
             
@@ -284,9 +284,9 @@
                 highlight.setAttribute('cx', position.x);
                 highlight.setAttribute('cy', position.y);
                 highlight.setAttribute('r', 20);
-                highlight.setAttribute('fill', '#60a5fa');
+                highlight.setAttribute('fill', '#f59e0b');
                 highlight.setAttribute('fill-opacity', '0.3');
-                highlight.setAttribute('stroke', '#3b82f6');
+                highlight.setAttribute('stroke', '#d97706');
                 highlight.setAttribute('stroke-width', '2');
                 highlight.setAttribute('stroke-dasharray', '4,2');
                 highlight.classList.add('move-highlight');
