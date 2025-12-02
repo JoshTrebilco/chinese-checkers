@@ -6,6 +6,7 @@ use App\Events\Gameplay\TokenMoved;
 use App\Events\Setup\GameStarted;
 use App\Events\Setup\PlayerColorSelected;
 use App\Events\Setup\PlayerJoinedGame;
+use App\States\BoardState;
 use App\States\GameState;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Controller;
@@ -63,6 +64,11 @@ class PlayerController extends Controller
         ]);
 
         $game_state = GameState::load($game_id);
+        $board_state = BoardState::load($game_state->board_id);
+
+        // Get token_id from the board state
+        $token = $board_state->getTokenAtPosition($validated['from_q'], $validated['from_r']);
+        $token_id = $token?->id;
 
         verb(new TokenMoved(
             game_id: $game_id,
@@ -72,6 +78,7 @@ class PlayerController extends Controller
             from_r: $validated['from_r'],
             to_q: $validated['to_q'],
             to_r: $validated['to_r'],
+            token_id: $token_id,
         ));
 
         return response()->json(['success' => true]);

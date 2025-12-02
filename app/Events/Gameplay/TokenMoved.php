@@ -24,6 +24,7 @@ class TokenMoved extends Event
         public int $from_r,
         public int $to_q,
         public int $to_r,
+        public ?int $token_id = null,
     ) {}
 
     public function validateGame(GameState $game)
@@ -59,6 +60,11 @@ class TokenMoved extends Event
             $token->player_id === $this->player_id,
             "Token at position ({$this->from_q}, {$this->from_r}) does not belong to player."
         );
+
+        // Set token_id if not already set (needed for Verbs to apply to TokenState)
+        if ($this->token_id === null) {
+            $this->token_id = $token->id;
+        }
 
         // Validate to position is empty (check both TokenState and cells array)
         $toToken = $board->getTokenAtPosition($this->to_q, $this->to_r);
@@ -102,12 +108,10 @@ class TokenMoved extends Event
         }
     }
 
-    public function applyToTokenState(TokenState $token)
+    public function applyToToken(TokenState $token)
     {
-        // Update token position if it matches the from position and player
-        if ($token->q === $this->from_q && 
-            $token->r === $this->from_r && 
-            $token->player_id === $this->player_id) {
+        // Update token position if it matches the token_id
+        if ($token->id === $this->token_id) {
             $token->q = $this->to_q;
             $token->r = $this->to_r;
         }
