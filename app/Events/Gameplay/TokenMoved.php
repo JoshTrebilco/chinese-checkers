@@ -3,7 +3,6 @@
 namespace App\Events\Gameplay;
 
 use App\Events\BroadcastEvent;
-use App\Events\Gameplay\TokenPositionUpdated;
 use App\States\BoardState;
 use App\States\GameState;
 use App\States\PlayerState;
@@ -14,6 +13,7 @@ use Thunk\Verbs\Event;
 #[AppliesToState(GameState::class)]
 #[AppliesToState(BoardState::class)]
 #[AppliesToState(PlayerState::class)]
+#[AppliesToState(TokenState::class)]
 class TokenMoved extends Event
 {
     public function __construct(
@@ -102,19 +102,19 @@ class TokenMoved extends Event
         }
     }
 
+    public function applyToTokenState(TokenState $token)
+    {
+        // Update token position if it matches the from position and player
+        if ($token->q === $this->from_q && 
+            $token->r === $this->from_r && 
+            $token->player_id === $this->player_id) {
+            $token->q = $this->to_q;
+            $token->r = $this->to_r;
+        }
+    }
+
     public function fired(BoardState $board)
     {
-        // Find and update the token that was moved
-        $token = $board->getTokenAtPosition($this->from_q, $this->from_r);
-        if ($token && $token->player_id === $this->player_id) {
-            // Update token position via event
-            TokenPositionUpdated::fire(
-                token_id: $token->id,
-                q: $this->to_q,
-                r: $this->to_r,
-            );
-        }
-
         // Recalculate valid moves for all tokens after move
         $board = BoardState::load($this->board_id);
         $board->recalculateAllTokenMoves();
