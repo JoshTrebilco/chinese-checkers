@@ -295,7 +295,7 @@ test('token can be moved to adjacent position', function () {
     verb(new PlayerJoinedGame(game_id: $game_state->id, player_id: 2, name: 'Player 2'));
     // TokensPlaced is automatically fired by PlayerJoinedGame when player has color
     $board_state = BoardState::load($board_state->id);
-    
+
     // Start the game so tokens can be moved
     verb(new GameStarted(game_id: $game_state->id, player_id: 1));
     $game_state = GameState::load($game_state->id);
@@ -349,7 +349,7 @@ test('cannot move token to occupied position', function () {
 
     // TokensPlaced is automatically fired by PlayerJoinedGame when player has color
     $board_state = BoardState::load($board_state->id);
-    
+
     // Start the game so tokens can be moved
     verb(new GameStarted(game_id: $game_state->id, player_id: 1));
     $game_state = GameState::load($game_state->id);
@@ -389,7 +389,7 @@ test('cannot move token to non-adjacent position', function () {
     verb(new PlayerJoinedGame(game_id: $game_state->id, player_id: 2, name: 'Player 2'));
     // TokensPlaced is automatically fired by PlayerJoinedGame when player has color
     $board_state = BoardState::load($board_state->id);
-    
+
     // Start the game so tokens can be moved
     verb(new GameStarted(game_id: $game_state->id, player_id: 1));
     $game_state = GameState::load($game_state->id);
@@ -402,12 +402,12 @@ test('cannot move token to non-adjacent position', function () {
     // First get the token to check its valid moves
     $token = $board_state->getTokenAtPosition($fromPos['q'], $fromPos['r']);
     expect($token)->not->toBeNull();
-    
+
     // Ensure valid moves are calculated
     if (empty($token->valid_moves)) {
         $token->calculateValidMoves($board_state);
     }
-    
+
     // Verify that (0, 0) is not in valid moves
     $isValidMove = false;
     foreach ($token->valid_moves as $move) {
@@ -417,7 +417,7 @@ test('cannot move token to non-adjacent position', function () {
         }
     }
     expect($isValidMove)->toBeFalse('Position (0, 0) should not be a valid move');
-    
+
     try {
         verb(new TokenMoved(
             game_id: $game_state->id,
@@ -491,14 +491,14 @@ test('TokenState valid moves include jump moves', function () {
     verb(new PlayerJoinedGame(game_id: $game_state->id, player_id: 2, name: 'Player 2'));
 
     $board_state = BoardState::load($board_state->id);
-    
+
     // Start the game so tokens can be moved
     verb(new GameStarted(game_id: $game_state->id, player_id: 1));
-    
+
     // Get a token from player 1
     $tokens = $board_state->getTokensForPlayer(1);
     $token = $tokens[0];
-    
+
     // Move token to create a jump opportunity
     // Use valid_moves to find an empty position
     $validMoves = $token->valid_moves;
@@ -506,10 +506,10 @@ test('TokenState valid moves include jump moves', function () {
         $token->calculateValidMoves($board_state);
         $validMoves = $token->valid_moves;
     }
-    
-    if (!empty($validMoves)) {
+
+    if (! empty($validMoves)) {
         $toPos = $validMoves[0];
-        
+
         verb(new TokenMoved(
             game_id: $game_state->id,
             board_id: $board_state->id,
@@ -519,13 +519,13 @@ test('TokenState valid moves include jump moves', function () {
             to_q: $toPos['q'],
             to_r: $toPos['r']
         ));
-        
+
         $board_state = BoardState::load($board_state->id);
         $token = TokenState::load($token->id);
-        
+
         // Recalculate moves - should include jump moves if there are tokens to jump over
         $token->calculateValidMoves($board_state);
-        
+
         expect($token->valid_moves)->toBeArray();
     }
 });
@@ -540,16 +540,16 @@ test('TokenState position is updated when token is moved', function () {
     verb(new PlayerJoinedGame(game_id: $game_state->id, player_id: 2, name: 'Player 2'));
 
     $board_state = BoardState::load($board_state->id);
-    
+
     // Start the game so tokens can be moved
     verb(new GameStarted(game_id: $game_state->id, player_id: 1));
-    
+
     // Get a token
     $tokens = $board_state->getTokensForPlayer(1);
     $token = $tokens[0];
     $originalQ = $token->q;
     $originalR = $token->r;
-    
+
     // Get a valid move position (empty adjacent position)
     $validMoves = $token->valid_moves;
     if (empty($validMoves)) {
@@ -557,9 +557,9 @@ test('TokenState position is updated when token is moved', function () {
         $validMoves = $token->valid_moves;
     }
     expect($validMoves)->not->toBeEmpty();
-    
+
     $toPos = $validMoves[0];
-    
+
     // Move token
     verb(new TokenMoved(
         game_id: $game_state->id,
@@ -571,7 +571,7 @@ test('TokenState position is updated when token is moved', function () {
         to_r: $toPos['r'],
         token_id: $token->id
     ));
-    
+
     // Reload token and verify position updated
     $token = TokenState::load($token->id);
     expect($token->q)->toBe($toPos['q'])
@@ -588,19 +588,19 @@ test('TokenState valid moves are recalculated after a move', function () {
     verb(new PlayerJoinedGame(game_id: $game_state->id, player_id: 2, name: 'Player 2'));
 
     $board_state = BoardState::load($board_state->id);
-    
+
     // Start the game so tokens can be moved
     verb(new GameStarted(game_id: $game_state->id, player_id: 1));
-    
+
     // Get tokens
     $tokens1 = $board_state->getTokensForPlayer(1);
     $tokens2 = $board_state->getTokensForPlayer(2);
-    
+
     $token1 = $tokens1[0];
     $originalMoves = $token1->valid_moves;
-    
+
     // Move a token from player 2 to change board state
-    if (!empty($tokens2)) {
+    if (! empty($tokens2)) {
         $token2 = $tokens2[0];
         // Use valid_moves to find an empty position
         $validMoves2 = $token2->valid_moves;
@@ -608,10 +608,10 @@ test('TokenState valid moves are recalculated after a move', function () {
             $token2->calculateValidMoves($board_state);
             $validMoves2 = $token2->valid_moves;
         }
-        
-        if (!empty($validMoves2)) {
+
+        if (! empty($validMoves2)) {
             $toPos = $validMoves2[0];
-            
+
             verb(new TokenMoved(
                 game_id: $game_state->id,
                 board_id: $board_state->id,
@@ -621,11 +621,11 @@ test('TokenState valid moves are recalculated after a move', function () {
                 to_q: $toPos['q'],
                 to_r: $toPos['r']
             ));
-            
+
             // Reload and verify token1's moves were recalculated
             $board_state = BoardState::load($board_state->id);
             $token1 = TokenState::load($token1->id);
-            
+
             // Moves should be recalculated (may be same or different)
             expect($token1->valid_moves)->toBeArray();
         }
