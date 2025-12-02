@@ -85,7 +85,17 @@ class TokenMoved extends Event
             $broadcastEvent->setGameState($game);
         }
         $broadcastEvent->setBoardState($boardState);
-        $broadcastEvent->setEvent(self::class);
+        
+        // Set event as object with type and move data
+        $broadcastEvent->setEvent([
+            'type' => self::class,
+            'from_q' => $this->from_q,
+            'from_r' => $this->from_r,
+            'to_q' => $this->to_q,
+            'to_r' => $this->to_r,
+            'player_id' => $this->player_id,
+        ]);
+        
         $player = PlayerState::load($this->player_id);
         $broadcastEvent->setPlayerState($player);
         event($broadcastEvent);

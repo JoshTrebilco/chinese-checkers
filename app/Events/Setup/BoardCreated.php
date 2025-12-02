@@ -33,13 +33,14 @@ class BoardCreated extends Event
 
     public function applyToGame(GameState $game)
     {
-        $game->board_id = $this->board_id;
+        $game->board_id = $this->board_id ?? snowflake_id();
     }
 
-    public function handle(GameState $gameState)
+    public function handle(GameState $gameState, BoardState $boardState)
     {
         $broadcastEvent = new BroadcastEvent;
         $broadcastEvent->setGameState($gameState);
+        $broadcastEvent->setBoardState($boardState);
         $broadcastEvent->setEvent(self::class);
         event($broadcastEvent);
     }

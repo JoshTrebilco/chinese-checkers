@@ -198,4 +198,67 @@ class BoardState extends State
 
         return $adjacent;
     }
+
+    /**
+     * Convert hex coordinates to pixel position
+     * 
+     * @param int $q
+     * @param int $r
+     * @return array [x, y] pixel coordinates
+     */
+    public function getHexCenter(int $q, int $r): array
+    {
+        $hexRadius = 30;
+        $centerX = 400;
+        $centerY = 400;
+        
+        $x = $hexRadius * sqrt(3) * ($q + $r / 2);
+        $y = $hexRadius * (3 / 2) * $r;
+        
+        return [$x + $centerX, $y + $centerY];
+    }
+
+    /**
+     * Get hexagon points for SVG polygon
+     * 
+     * @param int $q
+     * @param int $r
+     * @return string Points string for SVG polygon
+     */
+    public function getHexPoints(int $q, int $r): string
+    {
+        [$cx, $cy] = $this->getHexCenter($q, $r);
+        $hexRadius = 30;
+        
+        $points = [];
+        for ($i = 0; $i < 6; $i++) {
+            $angle = (M_PI / 180) * (60 * $i - 30);
+            $x = $cx + $hexRadius * cos($angle);
+            $y = $cy + $hexRadius * sin($angle);
+            $points[] = "{$x},{$y}";
+        }
+        
+        return implode(' ', $points);
+    }
+
+    /**
+     * Get color values for a given color name
+     * 
+     * @param string $color
+     * @param string $type 'fill', 'stroke', or 'border'
+     * @return string Hex color value
+     */
+    public function getColorValue(string $color, string $type = 'fill'): string
+    {
+        $colors = [
+            'blue' => ['fill' => '#3b82f6', 'stroke' => '#60a5fa', 'border' => '#93c5fd'],
+            'red' => ['fill' => '#ef4444', 'stroke' => '#f87171', 'border' => '#fca5a5'],
+            'yellow' => ['fill' => '#eab308', 'stroke' => '#fbbf24', 'border' => '#fde68a'],
+            'green' => ['fill' => '#22c55e', 'stroke' => '#4ade80', 'border' => '#86efac'],
+            'teal' => ['fill' => '#14b8a6', 'stroke' => '#2dd4bf', 'border' => '#5eead4'],
+            'purple' => ['fill' => '#a855f7', 'stroke' => '#c084fc', 'border' => '#c4b5fd'],
+        ];
+        
+        return $colors[$color][$type] ?? $colors['blue'][$type];
+    }
 }
