@@ -19,7 +19,7 @@
     <!-- Game Board -->
     <div class="mt-2 lg:mt-5 flex flex-col gap-6 lg:flex-row lg:items-start">
         @if($board)
-            <x-board :board="$board" :game="$game" :channel="$channel" />
+            <x-board :board="$board" :game="$game" :channel="$channel" :auth_player_id="$auth_player_id" />
         @else
             <div class="bg-slate-900/50 backdrop-blur-sm rounded-2xl p-8 border border-slate-800/50 shadow-xl">
                 <p class="text-blue-300">Board is being created...</p>

@@ -8,8 +8,6 @@ class BoardState extends State
 {
     public array $cells = [];
 
-    public ?int $game_id = null;
-
     /**
      * Initialize the board with all valid hexagonal coordinates
      */
@@ -30,6 +28,16 @@ class BoardState extends State
                 }
             }
         }
+    }
+
+    public function pieceAt(int $q, int $r): ?int
+    {
+        return $this->cells["{$q},{$r}"]['piece'] ?? null;
+    }
+
+    public function pieceColorAt(int $q, int $r): ?string
+    {
+        return $this->pieceAt($q, $r) ? PlayerState::load($this->pieceAt($q, $r))->color : null;
     }
 
     /**
@@ -113,11 +121,6 @@ class BoardState extends State
     public function getTotalPositions(): int
     {
         return count($this->cells);
-    }
-
-    public function game(): ?GameState
-    {
-        return $this->game_id ? GameState::load($this->game_id) : null;
     }
 
     /**

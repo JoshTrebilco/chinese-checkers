@@ -10,6 +10,8 @@ class GameState extends State
 {
     public bool $created = false;
 
+    public ?int $board_id = null;
+
     public ?int $last_player_id = null;
 
     public array $player_ids = [];
@@ -17,16 +19,19 @@ class GameState extends State
     public ?int $active_player_id = null;
 
     public ?int $winner_id = null;
-
-    public bool $ended = false;
-
+    
     public bool $started = false;
-
+    
+    public bool $ended = false;
+    
     public CarbonImmutable $created_at;
 
-    public ?int $board_id = null;
-
     public array $available_colors = ['blue', 'red', 'yellow', 'green', 'teal', 'purple'];
+
+    public function board(): ?BoardState
+    {
+        return $this->board_id ? BoardState::load($this->board_id) : null;
+    }
 
     /** @return Collection<int, PlayerState> */
     public function players(): Collection
@@ -79,10 +84,5 @@ class GameState extends State
         $this->active_player_id = $this->player_ids[$active_index + 1] ?? $this->player_ids[0];
 
         return $this;
-    }
-
-    public function board(): ?BoardState
-    {
-        return $this->board_id ? BoardState::load($this->board_id) : null;
     }
 }

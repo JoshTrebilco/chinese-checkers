@@ -24,7 +24,6 @@ class GameCreated extends Event
         $game->created = true;
         $game->created_at = now()->toImmutable();
         $game->player_ids = [];
-        $game->available_colors = ['blue', 'red', 'yellow', 'green', 'teal', 'purple'];
     }
 
     public function handle(GameState $game)
