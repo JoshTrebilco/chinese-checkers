@@ -72,9 +72,9 @@ class GameState extends State
         return in_array($player, $this->player_ids);
     }
 
-    public function hasAllPlayersJoined(): bool
+    public function hasEnoughPlayers(): bool
     {
-        return count($this->player_ids) == 2;
+        return count($this->player_ids) >= 2;
     }
 
     public function moveToNextPlayer(): static

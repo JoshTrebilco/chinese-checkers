@@ -73,7 +73,7 @@
 
     @endif
 
-    @if ($game->created && $game->hasAllPlayersJoined() && ! $game->isInProgress())
+    @if ($game->created && $game->hasEnoughPlayers() && ! $game->isInProgress())
         <form action="{{ route('players.startGame', ['game_id' => $game->id]) }}" method="post">
             @csrf
             <button type="submit"

@@ -19,7 +19,7 @@ class GameStarted extends Event
     {
         $this->assert($game->activePlayer() === null, 'A player has already been selected.');
         $this->assert($game->hasPlayer($this->player_id), 'This player is not part of the game.');
-        $this->assert($game->hasAllPlayersJoined(), 'There must be two players in the game.');
+        $this->assert($game->hasEnoughPlayers(), 'There must be at least two players in the game.');
     }
 
     public function applyToGame(GameState $game)
