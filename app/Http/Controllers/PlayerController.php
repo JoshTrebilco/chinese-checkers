@@ -3,7 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Events\Gameplay\TokenMoved;
-use App\Events\Setup\PlayerJoined;
+use App\Events\Setup\PlayerJoinedGame;
 use App\Events\Setup\TokensPlaced;
 use App\States\BoardState;
 use App\States\GameState;
@@ -20,7 +20,7 @@ class PlayerController extends Controller
 
         $user->update(['current_player_id' => $player_id]);
 
-        verb(new PlayerJoined(
+        verb(new PlayerJoinedGame(
             game_id: $game_id,
             player_id: $player_id,
             name: $user->name,

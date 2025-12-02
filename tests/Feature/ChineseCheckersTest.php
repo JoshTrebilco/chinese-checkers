@@ -3,7 +3,7 @@
 use App\Events\Gameplay\TokenMoved;
 use App\Events\Setup\BoardCreated;
 use App\Events\Setup\GameCreated;
-use App\Events\Setup\PlayerJoined;
+use App\Events\Setup\PlayerJoinedGame;
 use App\Events\Setup\TokensPlaced;
 use App\States\BoardState;
 use App\States\GameState;
@@ -127,13 +127,13 @@ test('player color is auto-assigned when joining', function () {
     $game_state = verb(new GameCreated)->state(GameState::class);
     $board_state = verb(new BoardCreated(game_id: $game_state->id))->state(BoardState::class);
 
-    $player1 = verb(new PlayerJoined(game_id: $game_state->id, player_id: 1, name: 'Player 1'))->state(PlayerState::class);
+    $player1 = verb(new PlayerJoinedGame(game_id: $game_state->id, player_id: 1, name: 'Player 1'))->state(PlayerState::class);
     expect($player1->color)->toBe('blue');
 
-    $player2 = verb(new PlayerJoined(game_id: $game_state->id, player_id: 2, name: 'Player 2'))->state(PlayerState::class);
+    $player2 = verb(new PlayerJoinedGame(game_id: $game_state->id, player_id: 2, name: 'Player 2'))->state(PlayerState::class);
     expect($player2->color)->toBe('red');
 
-    $player3 = verb(new PlayerJoined(game_id: $game_state->id, player_id: 3, name: 'Player 3'))->state(PlayerState::class);
+    $player3 = verb(new PlayerJoinedGame(game_id: $game_state->id, player_id: 3, name: 'Player 3'))->state(PlayerState::class);
     expect($player3->color)->toBe('yellow');
 });
 
@@ -215,7 +215,7 @@ test('tokens are placed correctly in starting positions', function () {
     $game_state = verb(new GameCreated)->state(GameState::class);
     $board_state = verb(new BoardCreated(game_id: $game_state->id))->state(BoardState::class);
 
-    $player = verb(new PlayerJoined(game_id: $game_state->id, player_id: 1, name: 'Player 1'))->state(PlayerState::class);
+    $player = verb(new PlayerJoinedGame(game_id: $game_state->id, player_id: 1, name: 'Player 1'))->state(PlayerState::class);
     expect($player->color)->toBe('blue');
 
     verb(new TokensPlaced(board_id: $board_state->id, player_id: 1));
@@ -237,8 +237,8 @@ test('tokens are placed in correct region based on color', function () {
     $board_state = verb(new BoardCreated(game_id: $game_state->id))->state(BoardState::class);
 
     // Create players with different colors
-    $player1 = verb(new PlayerJoined(game_id: $game_state->id, player_id: 1, name: 'Player 1'))->state(PlayerState::class);
-    $player2 = verb(new PlayerJoined(game_id: $game_state->id, player_id: 2, name: 'Player 2'))->state(PlayerState::class);
+    $player1 = verb(new PlayerJoinedGame(game_id: $game_state->id, player_id: 1, name: 'Player 1'))->state(PlayerState::class);
+    $player2 = verb(new PlayerJoinedGame(game_id: $game_state->id, player_id: 2, name: 'Player 2'))->state(PlayerState::class);
 
     // Place tokens
     verb(new TokensPlaced(board_id: $board_state->id, player_id: 1));
@@ -283,7 +283,7 @@ test('token can be moved to adjacent position', function () {
     $game_state = verb(new GameCreated)->state(GameState::class);
     $board_state = verb(new BoardCreated(game_id: $game_state->id))->state(BoardState::class);
 
-    $player = verb(new PlayerJoined(game_id: $game_state->id, player_id: 1, name: 'Player 1'))->state(PlayerState::class);
+    $player = verb(new PlayerJoinedGame(game_id: $game_state->id, player_id: 1, name: 'Player 1'))->state(PlayerState::class);
     verb(new TokensPlaced(board_id: $board_state->id, player_id: 1));
     $board_state = BoardState::load($board_state->id);
 
@@ -328,8 +328,8 @@ test('cannot move token to occupied position', function () {
     $game_state = verb(new GameCreated)->state(GameState::class);
     $board_state = verb(new BoardCreated(game_id: $game_state->id))->state(BoardState::class);
 
-    $player1 = verb(new PlayerJoined(game_id: $game_state->id, player_id: 1, name: 'Player 1'))->state(PlayerState::class);
-    $player2 = verb(new PlayerJoined(game_id: $game_state->id, player_id: 2, name: 'Player 2'))->state(PlayerState::class);
+    $player1 = verb(new PlayerJoinedGame(game_id: $game_state->id, player_id: 1, name: 'Player 1'))->state(PlayerState::class);
+    $player2 = verb(new PlayerJoinedGame(game_id: $game_state->id, player_id: 2, name: 'Player 2'))->state(PlayerState::class);
 
     verb(new TokensPlaced(board_id: $board_state->id, player_id: 1));
     verb(new TokensPlaced(board_id: $board_state->id, player_id: 2));
@@ -363,7 +363,7 @@ test('cannot move token to non-adjacent position', function () {
     $game_state = verb(new GameCreated)->state(GameState::class);
     $board_state = verb(new BoardCreated(game_id: $game_state->id))->state(BoardState::class);
 
-    $player = verb(new PlayerJoined(game_id: $game_state->id, player_id: 1, name: 'Player 1'))->state(PlayerState::class);
+    $player = verb(new PlayerJoinedGame(game_id: $game_state->id, player_id: 1, name: 'Player 1'))->state(PlayerState::class);
     verb(new TokensPlaced(board_id: $board_state->id, player_id: 1));
     $board_state = BoardState::load($board_state->id);
 

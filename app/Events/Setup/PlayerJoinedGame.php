@@ -10,7 +10,7 @@ use Thunk\Verbs\Event;
 
 #[AppliesToState(PlayerState::class)]
 #[AppliesToState(GameState::class)]
-class PlayerJoined extends Event
+class PlayerJoinedGame extends Event
 {
     public function __construct(
         public int $game_id,

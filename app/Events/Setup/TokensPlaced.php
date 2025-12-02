@@ -18,7 +18,7 @@ class TokensPlaced extends Event
 
     public function validatePlayer(PlayerState $player)
     {
-        // Reload player to ensure we have the latest state (color might have been set by PlayerJoined)
+        // Reload player to ensure we have the latest state (color might have been set by PlayerJoinedGame)
         $player = PlayerState::load($this->player_id);
         $this->assert(
             $player->color !== null,
