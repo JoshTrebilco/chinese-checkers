@@ -116,6 +116,11 @@
                 @if($activePlayer)
                     <x-token :color="$activePlayer->color" :size="24" />
                     <span class="text-amber-200 font-medium" id="active-player-name">{{ $activePlayer->name }}</span>
+                    @if ($activePlayer->id == $auth_player_id)
+                        <span class="inline-flex items-center rounded-md bg-amber-400/10 px-2 py-1 text-xs font-medium text-amber-400 ring-1 ring-inset ring-amber-400/30">
+                            You
+                        </span>
+                    @endif
                 @else
                     <span class="text-amber-200/60 font-medium">Waiting...</span>
                 @endif
@@ -186,7 +191,10 @@
                 const activePlayer = this.players.find(p => String(p.id) === String(this.activePlayerId));
                 if (activePlayer) {
                     activePlayerDisplay.innerHTML = this.generateTokenHTML(activePlayer.color, 24) + 
-                        `<span class="text-amber-200 font-medium" id="active-player-name">${activePlayer.name}</span>`;
+                        `<span class="text-amber-200 font-medium" id="active-player-name">${activePlayer.name}</span>`
+                        + (activePlayer.id == this.authPlayerId ? `<span class="inline-flex items-center rounded-md bg-amber-400/10 px-2 py-1 text-xs font-medium text-amber-400 ring-1 ring-inset ring-amber-400/30">
+                            You
+                        </span>` : '');
                 }
             } else {
                 activePlayerDisplay.innerHTML = '<span class="text-amber-200/60 font-medium">Waiting...</span>';
