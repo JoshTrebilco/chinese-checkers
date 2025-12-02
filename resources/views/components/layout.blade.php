@@ -8,7 +8,7 @@
         <title>Chinese Checkers</title>
 
         <link rel="preconnect" href="https://fonts.bunny.net">
-        <link href="https://fonts.bunny.net/css?family=zhi-mang-xing:400&display=swap" rel="stylesheet" />
+        <link href="https://fonts.bunny.net/css?family=kaushan-script:400&display=swap" rel="stylesheet" />
 
         @vite(['resources/css/app.css', 'resources/js/app.js'])
     </head>

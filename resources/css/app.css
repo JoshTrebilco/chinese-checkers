@@ -6,6 +6,6 @@
 @source '../**/*.js';
 
 @theme {
-    --font-sans: 'Zhi Mang Xing', ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji',
+    --font-sans: 'Kaushan Script', ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji',
         'Segoe UI Symbol', 'Noto Color Emoji';
 }
