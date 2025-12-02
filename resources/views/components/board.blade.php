@@ -4,7 +4,7 @@
     $players = $game->players()->keyBy('id');
 @endphp
 
-<div class="relative w-full h-auto flex items-center justify-center">
+<div class="relative mx-auto w-full h-auto flex items-center justify-center">
     <style>
         .selectable-token {
             cursor: pointer;
@@ -33,7 +33,7 @@
         }
     </style>
     <svg id="board-svg" 
-        class="w-full h-auto max-w-[800px] max-h-[800px]"
+        class="w-full h-auto max-w-[600px]"
         viewBox="0 0 800 800"
         preserveAspectRatio="xMidYMid meet"
         xmlns="http://www.w3.org/2000/svg">

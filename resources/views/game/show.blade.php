@@ -17,7 +17,7 @@
     </div>
 
     <!-- Game Board -->
-    <div class="flex flex-col gap-3">
+    <div class="flex flex-col gap-3 w-full max-w-full">
         @if($board)
             <x-board :board="$board" :game="$game" :channel="$channel" :auth_player_id="$auth_player_id" />
         @else
