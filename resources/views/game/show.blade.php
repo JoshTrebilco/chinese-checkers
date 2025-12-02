@@ -2,6 +2,7 @@
     use Illuminate\Support\Str;
     $channel = Str::after(config('app.url'), 'https://').'.'.'game.'.$game->id;
     $board = $game->board();
+    $tokens = $board ? $board->getAllTokens() : [];
 @endphp
 
 <x-layout>
@@ -19,7 +20,7 @@
     <!-- Game Board -->
     <div class="flex flex-col gap-3 w-full max-w-full">
         @if($board)
-            <x-board :board="$board" :game="$game" :channel="$channel" :auth_player_id="$auth_player_id" />
+            <x-board :board="$board" :game="$game" :channel="$channel" :auth_player_id="$auth_player_id" :tokens="$tokens" />
         @else
             <div class="bg-slate-900/50 backdrop-blur-sm rounded-2xl p-8 border border-red-800/50 shadow-xl">
                 <p class="text-amber-300">Board is being created...</p>

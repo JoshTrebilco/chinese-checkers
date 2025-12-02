@@ -7,6 +7,8 @@ use Thunk\Verbs\State;
 class BoardState extends State
 {
     public array $cells = [];
+    
+    public array $token_ids = [];
 
     /**
      * Initialize the board with all valid hexagonal coordinates
@@ -263,5 +265,111 @@ class BoardState extends State
         ];
         
         return $colors[$color][$type] ?? $colors['blue'][$type];
+    }
+
+    /**
+     * Get a token by ID
+     *
+     * @param int $tokenId
+     * @return TokenState|null
+     */
+    public function getToken(int $tokenId): ?TokenState
+    {
+        if (!in_array($tokenId, $this->token_ids)) {
+            return null;
+        }
+        
+        return TokenState::load($tokenId);
+    }
+
+    /**
+     * Get all tokens for a specific player
+     *
+     * @param int $playerId
+     * @return array Array of TokenState objects
+     */
+    public function getTokensForPlayer(int $playerId): array
+    {
+        $tokens = [];
+        foreach ($this->token_ids as $tokenId) {
+            $token = TokenState::load($tokenId);
+            if ($token && $token->player_id === $playerId) {
+                $tokens[] = $token;
+            }
+        }
+        return $tokens;
+    }
+
+    /**
+     * Get all tokens on the board
+     *
+     * @return array Array of TokenState objects
+     */
+    public function getAllTokens(): array
+    {
+        $tokens = [];
+        foreach ($this->token_ids as $tokenId) {
+            $token = TokenState::load($tokenId);
+            if ($token) {
+                $tokens[] = $token;
+            }
+        }
+        return $tokens;
+    }
+
+    /**
+     * Get token at a specific position
+     *
+     * @param int $q
+     * @param int $r
+     * @return TokenState|null
+     */
+    public function getTokenAtPosition(int $q, int $r): ?TokenState
+    {
+        foreach ($this->token_ids as $tokenId) {
+            $token = TokenState::load($tokenId);
+            if ($token && $token->q === $q && $token->r === $r) {
+                return $token;
+            }
+        }
+        return null;
+    }
+
+    /**
+     * Recalculate valid moves for all tokens on the board
+     *
+     * @return void
+     */
+    public function recalculateAllTokenMoves(): void
+    {
+        foreach ($this->token_ids as $tokenId) {
+            $token = TokenState::load($tokenId);
+            if ($token) {
+                $token->calculateValidMoves($this);
+            }
+        }
+    }
+
+    /**
+     * Get all tokens as array for serialization (for frontend)
+     *
+     * @return array
+     */
+    public function getTokensArray(): array
+    {
+        $tokens = [];
+        foreach ($this->token_ids as $tokenId) {
+            $token = TokenState::load($tokenId);
+            if ($token) {
+                $tokens[] = [
+                    'id' => $token->id,
+                    'player_id' => $token->player_id,
+                    'q' => $token->q,
+                    'r' => $token->r,
+                    'valid_moves' => $token->valid_moves,
+                ];
+            }
+        }
+        return $tokens;
     }
 }

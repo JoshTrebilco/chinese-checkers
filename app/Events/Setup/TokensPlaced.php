@@ -3,6 +3,7 @@
 namespace App\Events\Setup;
 
 use App\Events\BroadcastEvent;
+use App\Events\Setup\TokenCreated;
 use App\States\GameState;
 use App\States\BoardState;
 use App\States\PlayerState;
@@ -64,12 +65,40 @@ class TokensPlaced extends Event
         }
     }
 
+    public function fired(BoardState $board)
+    {
+        $player = PlayerState::load($this->player_id);
+        $startingPositions = $board->getStartingPositionsForColor($player->color);
+
+        // Create TokenState for each token
+        foreach ($startingPositions as $pos) {
+            TokenCreated::fire(
+                board_id: $this->board_id,
+                player_id: $this->player_id,
+                q: $pos['q'],
+                r: $pos['r'],
+                token_id: snowflake_id(),
+            );
+        }
+
+        // Recalculate valid moves for all tokens after all are created
+        $board = BoardState::load($this->board_id);
+        $board->recalculateAllTokenMoves();
+    }
+
     public function handle(GameState $gameState, BoardState $boardState, PlayerState $playerState)
     {
+        // Reload board to get updated token states
+        $boardState = BoardState::load($this->board_id);
+        
+        // Add tokens to boardState for frontend
+        $boardStateArray = (array) $boardState;
+        $boardStateArray['tokens'] = $boardState->getTokensArray();
+        
         $broadcastEvent = new BroadcastEvent;
         $broadcastEvent->setGameState($gameState);
         $broadcastEvent->setPlayerState($playerState);
-        $broadcastEvent->setBoardState($boardState);
+        $broadcastEvent->setBoardState((object) $boardStateArray);
         $broadcastEvent->setEvent(self::class);
         event($broadcastEvent);
     }

@@ -1,7 +1,21 @@
-@props(['board', 'game', 'channel', 'auth_player_id'])
+@props(['board', 'game', 'channel', 'auth_player_id', 'tokens' => []])
 @php
     $cells = $board->getCells();
     $players = $game->players()->keyBy('id');
+    // Create a map of tokens by position for easy lookup
+    $tokensByPosition = [];
+    foreach ($tokens as $token) {
+        $key = "{$token->q},{$token->r}";
+        $tokensByPosition[$key] = $token;
+    }
+    // Prepare tokens array for JavaScript
+    $tokensForJs = collect($tokens)->map(fn($t) => [
+        'id' => $t->id,
+        'player_id' => $t->player_id,
+        'q' => $t->q,
+        'r' => $t->r,
+        'valid_moves' => $t->valid_moves
+    ])->keyBy(fn($t) => "{$t['q']},{$t['r']}")->toArray();
 @endphp
 
 <div class="relative mx-auto w-full h-auto flex items-center justify-center">
@@ -131,6 +145,7 @@
             this.selectedToken = null;
             this.cells = @json($cells);
             this.activePlayerId = '{{ $game->activePlayer()?->id ?? 'null' }}';
+            this.tokens = @json($tokensForJs);
         }
 
         calculateHexPositions() {
@@ -259,6 +274,11 @@
             });
         }
 
+        getTokenByPosition(q, r) {
+            const key = `${q},${r}`;
+            return this.tokens[key] || null;
+        }
+
         clearHighlights() {
             // Remove move highlights
             document.querySelectorAll('.move-highlight').forEach(el => el.remove());
@@ -268,12 +288,13 @@
             });
         }
 
-        highlightAdjacentSpaces(q, r) {
-            const emptyAdjacent = this.getEmptyAdjacentPositions(q, r);
+        highlightValidMoves(token) {
+            if (!token || !token.valid_moves) return;
+            
             const svg = document.getElementById('board-svg');
             
-            emptyAdjacent.forEach(pos => {
-                const position = this.hexPositions[`${pos.q},${pos.r}`];
+            token.valid_moves.forEach(move => {
+                const position = this.hexPositions[`${move.q},${move.r}`];
                 if (!position) return;
 
                 // Create highlight circle
@@ -287,11 +308,44 @@
                 highlight.setAttribute('stroke-width', '2');
                 highlight.setAttribute('stroke-dasharray', '4,2');
                 highlight.classList.add('move-highlight');
-                highlight.setAttribute('data-q', pos.q);
-                highlight.setAttribute('data-r', pos.r);
+                highlight.setAttribute('data-q', move.q);
+                highlight.setAttribute('data-r', move.r);
                 highlight.style.cursor = 'pointer';
                 svg.appendChild(highlight);
             });
+        }
+
+        highlightAdjacentSpaces(q, r) {
+            // Legacy method - now uses token's valid moves if available
+            const token = this.getTokenByPosition(q, r);
+            if (token && token.valid_moves) {
+                this.highlightValidMoves(token);
+            } else {
+                // Fallback to adjacent positions if token not found
+                const emptyAdjacent = this.getEmptyAdjacentPositions(q, r);
+                const svg = document.getElementById('board-svg');
+                
+                emptyAdjacent.forEach(pos => {
+                    const position = this.hexPositions[`${pos.q},${pos.r}`];
+                    if (!position) return;
+
+                    // Create highlight circle
+                    const highlight = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+                    highlight.setAttribute('cx', position.x);
+                    highlight.setAttribute('cy', position.y);
+                    highlight.setAttribute('r', 20);
+                    highlight.setAttribute('fill', '#f59e0b');
+                    highlight.setAttribute('fill-opacity', '0.3');
+                    highlight.setAttribute('stroke', '#d97706');
+                    highlight.setAttribute('stroke-width', '2');
+                    highlight.setAttribute('stroke-dasharray', '4,2');
+                    highlight.classList.add('move-highlight');
+                    highlight.setAttribute('data-q', pos.q);
+                    highlight.setAttribute('data-r', pos.r);
+                    highlight.style.cursor = 'pointer';
+                    svg.appendChild(highlight);
+                });
+            }
         }
 
         selectToken(token) {
@@ -308,17 +362,24 @@
                 return;
             }
 
-            this.selectedToken = { playerId, q, r };
-            token.classList.add('selected');
-            
-            // Enhance border for selected token (CSS will handle the styling)
-            const border = token.querySelector('.token-border');
-            if (border) {
-                // The CSS class will handle the styling
+            // Find token data by position
+            const tokenData = this.getTokenByPosition(q, r);
+            if (!tokenData) {
+                console.warn(`Token data not found for position (${q}, ${r})`);
+                return;
             }
 
-            // Highlight adjacent empty spaces
-            this.highlightAdjacentSpaces(q, r);
+            this.selectedToken = { 
+                playerId, 
+                q, 
+                r, 
+                tokenId: tokenData.id,
+                validMoves: tokenData.valid_moves || []
+            };
+            token.classList.add('selected');
+
+            // Highlight valid moves from token state
+            this.highlightValidMoves(tokenData);
         }
 
         async moveTokenToSpace(toQ, toR) {
@@ -430,6 +491,19 @@
                 console.warn('TokenMoved event received without move data');
                 this.movementInProgress = false;
                 this.updateCursorStyles();
+            }
+
+            // Update tokens if boardState has token data
+            if (boardState && boardState.tokens) {
+                // Reload tokens from boardState
+                const tokensMap = {};
+                if (Array.isArray(boardState.tokens)) {
+                    boardState.tokens.forEach(token => {
+                        const key = `${token.q},${token.r}`;
+                        tokensMap[key] = token;
+                    });
+                    this.tokens = tokensMap;
+                }
             }
 
             // Update active player if changed

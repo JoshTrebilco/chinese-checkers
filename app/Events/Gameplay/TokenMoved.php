@@ -3,9 +3,11 @@
 namespace App\Events\Gameplay;
 
 use App\Events\BroadcastEvent;
+use App\Events\Gameplay\TokenPositionUpdated;
 use App\States\BoardState;
 use App\States\GameState;
 use App\States\PlayerState;
+use App\States\TokenState;
 use Thunk\Verbs\Attributes\Autodiscovery\AppliesToState;
 use Thunk\Verbs\Event;
 
@@ -32,43 +34,56 @@ class TokenMoved extends Event
 
     public function validateBoard(BoardState $board)
     {
-        // Validate from position exists and has player's token
+        // Validate from position exists on the board
         $fromCell = $board->getCell($this->from_q, $this->from_r);
         $this->assert(
             $fromCell !== null,
             "From position ({$this->from_q}, {$this->from_r}) is not on the board."
         );
-        
-        $this->assert(
-            $fromCell['piece'] === $this->player_id,
-            "From position ({$this->from_q}, {$this->from_r}) does not contain player's token."
-        );
 
-        // Validate to position exists and is empty
+        // Validate to position exists on the board
         $toCell = $board->getCell($this->to_q, $this->to_r);
         $this->assert(
             $toCell !== null,
             "To position ({$this->to_q}, {$this->to_r}) is not on the board."
         );
+
+        // Find token at from position - TokenState is the source of truth
+        $token = $board->getTokenAtPosition($this->from_q, $this->from_r);
+        $this->assert(
+            $token !== null,
+            "Token not found at position ({$this->from_q}, {$this->from_r})."
+        );
         
         $this->assert(
-            $toCell['piece'] === null,
+            $token->player_id === $this->player_id,
+            "Token at position ({$this->from_q}, {$this->from_r}) does not belong to player."
+        );
+
+        // Validate to position is empty (check both TokenState and cells array)
+        $toToken = $board->getTokenAtPosition($this->to_q, $this->to_r);
+        $this->assert(
+            $toToken === null,
             "To position ({$this->to_q}, {$this->to_r}) is already occupied."
         );
 
-        // Validate move is to an adjacent position
-        $adjacentPositions = $board->getAdjacentPositions($this->from_q, $this->from_r);
-        $isAdjacent = false;
-        foreach ($adjacentPositions as $adj) {
-            if ($adj['q'] === $this->to_q && $adj['r'] === $this->to_r) {
-                $isAdjacent = true;
+        // Ensure valid moves are calculated
+        if (empty($token->valid_moves)) {
+            $token->calculateValidMoves($board);
+        }
+
+        // Validate move is in token's valid_moves list
+        $isValidMove = false;
+        foreach ($token->valid_moves as $move) {
+            if ($move['q'] === $this->to_q && $move['r'] === $this->to_r) {
+                $isValidMove = true;
                 break;
             }
         }
         
         $this->assert(
-            $isAdjacent,
-            "To position ({$this->to_q}, {$this->to_r}) is not adjacent to from position ({$this->from_q}, {$this->from_r})."
+            $isValidMove,
+            "Move to position ({$this->to_q}, {$this->to_r}) is not a valid move for this token."
         );
     }
 
@@ -87,11 +102,36 @@ class TokenMoved extends Event
         }
     }
 
+    public function fired(BoardState $board)
+    {
+        // Find and update the token that was moved
+        $token = $board->getTokenAtPosition($this->from_q, $this->from_r);
+        if ($token && $token->player_id === $this->player_id) {
+            // Update token position via event
+            TokenPositionUpdated::fire(
+                token_id: $token->id,
+                q: $this->to_q,
+                r: $this->to_r,
+            );
+        }
+
+        // Recalculate valid moves for all tokens after move
+        $board = BoardState::load($this->board_id);
+        $board->recalculateAllTokenMoves();
+    }
+
     public function handle(GameState $gameState, BoardState $boardState, PlayerState $playerState)
     {
+        // Reload board to get updated token states
+        $boardState = BoardState::load($this->board_id);
+        
+        // Add tokens to boardState for frontend
+        $boardStateArray = (array) $boardState;
+        $boardStateArray['tokens'] = $boardState->getTokensArray();
+        
         $broadcastEvent = new BroadcastEvent;
         $broadcastEvent->setGameState($gameState);
-        $broadcastEvent->setBoardState($boardState);
+        $broadcastEvent->setBoardState((object) $boardStateArray);
         $broadcastEvent->setPlayerState($playerState);
 
         $broadcastEvent->setEvent(self::class);
