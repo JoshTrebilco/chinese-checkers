@@ -3,15 +3,19 @@
 namespace App\Events\Setup;
 
 use App\Events\BroadcastEvent;
+use App\States\GameState;
 use App\States\BoardState;
 use App\States\PlayerState;
 use Thunk\Verbs\Attributes\Autodiscovery\AppliesToState;
 use Thunk\Verbs\Event;
 
+#[AppliesToState(GameState::class)]
 #[AppliesToState(BoardState::class)]
+#[AppliesToState(PlayerState::class)]
 class TokensPlaced extends Event
 {
     public function __construct(
+        public int $game_id,
         public int $board_id,
         public int $player_id,
     ) {}
@@ -60,13 +64,11 @@ class TokensPlaced extends Event
         }
     }
 
-    public function handle(BoardState $boardState)
+    public function handle(GameState $gameState, BoardState $boardState, PlayerState $playerState)
     {
         $broadcastEvent = new BroadcastEvent;
-        $game = $boardState->game();
-        if ($game) {
-            $broadcastEvent->setGameState($game);
-        }
+        $broadcastEvent->setGameState($gameState);
+        $broadcastEvent->setPlayerState($playerState);
         $broadcastEvent->setBoardState($boardState);
         $broadcastEvent->setEvent(self::class);
         event($broadcastEvent);

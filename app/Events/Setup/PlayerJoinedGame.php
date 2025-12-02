@@ -55,6 +55,7 @@ class PlayerJoinedGame extends Event
         // Only place tokens if board exists and player has a color
         if ($board && $player->color) {
             TokensPlaced::fire(
+                game_id: $game->id,
                 board_id: $board->id,
                 player_id: $this->player_id,
             );
