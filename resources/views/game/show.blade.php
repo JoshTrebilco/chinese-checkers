@@ -40,10 +40,14 @@
         }
 
         handleEvent(event, gameState) {
+            // Handle game end events
+            if (event === 'App\\Events\\Gameplay\\PlayerWonGame' || 
+                event === 'App\\Events\\Gameplay\\PlayersTiedGame') {
+                window.location.reload();
+            }
+
             // Setup events should refresh the page
             if (event && typeof event === 'string' && event.startsWith('App\\Events\\Setup')) {
-                window.location.reload();
-            } else if (event && typeof event === 'object' && event.type && event.type.startsWith('App\\Events\\Setup')) {
                 window.location.reload();
             }
         }
