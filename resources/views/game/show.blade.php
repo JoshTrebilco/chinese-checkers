@@ -46,6 +46,11 @@
                 window.location.reload();
             }
 
+            // Handle turn end - reload after animation completes
+            if (event === 'App\\Events\\Gameplay\\EndedTurn') {
+                setTimeout(() => window.location.reload(), 600);
+            }
+
             // Setup events should refresh the page
             if (event && typeof event === 'string' && event.startsWith('App\\Events\\Setup')) {
                 window.location.reload();
