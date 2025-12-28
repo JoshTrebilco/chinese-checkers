@@ -30,10 +30,20 @@ class GameStarted extends Event
 
     public function handle(GameState $game)
     {
-        $broadcastEvent = new BroadcastEvent();
+        $board = $game->board();
+        $boardStateForBroadcast = null;
+
+        if ($board) {
+            $boardStateForBroadcast = (object) [
+                'id' => $board->id,
+                'tokens' => $board->getTokensArray(),
+            ];
+        }
+
+        $broadcastEvent = new BroadcastEvent;
         $broadcastEvent->setGameState($game);
+        $broadcastEvent->setBoardState($boardStateForBroadcast);
         $broadcastEvent->setEvent(self::class);
         event($broadcastEvent);
     }
 }
-

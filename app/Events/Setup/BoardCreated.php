@@ -30,6 +30,7 @@ class BoardCreated extends Event
 
     public function applyToBoard(BoardState $board)
     {
+        $board->game_id = $this->game_id;
         $board->setup();
     }
 

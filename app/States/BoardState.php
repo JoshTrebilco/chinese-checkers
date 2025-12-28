@@ -7,8 +7,10 @@ use Thunk\Verbs\State;
 class BoardState extends State
 {
     public array $cells = [];
-    
+
     public array $token_ids = [];
+
+    public ?int $game_id = null;
 
     /**
      * Initialize the board with all valid hexagonal coordinates
@@ -46,8 +48,8 @@ class BoardState extends State
      * Determine if a coordinate (q, r) is part of the Chinese Checkers star board
      * Ported from JavaScript in welcome.blade.php
      *
-     * @param int $q The q coordinate (column-like)
-     * @param int $r The r coordinate (row-like)
+     * @param  int  $q  The q coordinate (column-like)
+     * @param  int  $r  The r coordinate (row-like)
      * @return bool True if the coordinate is on the board
      */
     public function isOnBoard(int $q, int $r): bool
@@ -105,20 +107,17 @@ class BoardState extends State
     /**
      * Get a specific cell by coordinates
      *
-     * @param int $q
-     * @param int $r
      * @return array|null The cell data or null if not found
      */
     public function getCell(int $q, int $r): ?array
     {
         $key = "{$q},{$r}";
+
         return $this->cells[$key] ?? null;
     }
 
     /**
      * Get the total number of valid board positions
-     *
-     * @return int
      */
     public function getTotalPositions(): int
     {
@@ -128,7 +127,7 @@ class BoardState extends State
     /**
      * Get the 10 starting positions for a given color
      *
-     * @param string $color The player color (blue, red, yellow, green, orange, purple)
+     * @param  string  $color  The player color (blue, red, yellow, green, orange, purple)
      * @return array Array of ['q' => int, 'r' => int] positions
      */
     public function getStartingPositionsForColor(string $color): array
@@ -140,7 +139,7 @@ class BoardState extends State
         for ($q = -8; $q <= 8; $q++) {
             for ($r = -8; $r <= 8; $r++) {
                 $sum = -$q - $r;
-                
+
                 $matches = false;
                 switch ($color) {
                     case 'red': // North
@@ -176,8 +175,6 @@ class BoardState extends State
     /**
      * Get the 6 adjacent positions for a given hex coordinate
      *
-     * @param int $q
-     * @param int $r
      * @return array Array of ['q' => int, 'r' => int] positions
      */
     public function getAdjacentPositions(int $q, int $r): array
@@ -206,9 +203,7 @@ class BoardState extends State
 
     /**
      * Convert hex coordinates to pixel position
-     * 
-     * @param int $q
-     * @param int $r
+     *
      * @return array [x, y] pixel coordinates
      */
     public function getHexCenter(int $q, int $r): array
@@ -216,25 +211,23 @@ class BoardState extends State
         $hexRadius = 30;
         $centerX = 400;
         $centerY = 400;
-        
+
         $x = $hexRadius * sqrt(3) * ($q + $r / 2);
         $y = $hexRadius * (3 / 2) * $r;
-        
+
         return [$x + $centerX, $y + $centerY];
     }
 
     /**
      * Get hexagon points for SVG polygon
-     * 
-     * @param int $q
-     * @param int $r
+     *
      * @return string Points string for SVG polygon
      */
     public function getHexPoints(int $q, int $r): string
     {
         [$cx, $cy] = $this->getHexCenter($q, $r);
         $hexRadius = 30;
-        
+
         $points = [];
         for ($i = 0; $i < 6; $i++) {
             $angle = (M_PI / 180) * (60 * $i - 30);
@@ -242,15 +235,14 @@ class BoardState extends State
             $y = $cy + $hexRadius * sin($angle);
             $points[] = "{$x},{$y}";
         }
-        
+
         return implode(' ', $points);
     }
 
     /**
      * Get color values for a given color name
-     * 
-     * @param string $color
-     * @param string $type 'fill', 'stroke', or 'border'
+     *
+     * @param  string  $type  'fill', 'stroke', or 'border'
      * @return string Hex color value
      */
     public function getColorValue(string $color, string $type = 'fill'): string
@@ -263,29 +255,25 @@ class BoardState extends State
             'orange' => ['fill' => '#f59e42', 'stroke' => '#fdba74', 'border' => '#ffedd5'],     // Tailwind orange-500, orange-300, orange-100
             'purple' => ['fill' => '#a855f7', 'stroke' => '#c084fc', 'border' => '#ddd6fe'],     // Tailwind purple-500, purple-400, purple-200
         ];
-        
+
         return $colors[$color][$type] ?? $colors['blue'][$type];
     }
 
     /**
      * Get a token by ID
-     *
-     * @param int $tokenId
-     * @return TokenState|null
      */
     public function getToken(int $tokenId): ?TokenState
     {
-        if (!in_array($tokenId, $this->token_ids)) {
+        if (! in_array($tokenId, $this->token_ids)) {
             return null;
         }
-        
+
         return TokenState::load($tokenId);
     }
 
     /**
      * Get all tokens for a specific player
      *
-     * @param int $playerId
      * @return array Array of TokenState objects
      */
     public function getTokensForPlayer(int $playerId): array
@@ -297,6 +285,7 @@ class BoardState extends State
                 $tokens[] = $token;
             }
         }
+
         return $tokens;
     }
 
@@ -314,15 +303,12 @@ class BoardState extends State
                 $tokens[] = $token;
             }
         }
+
         return $tokens;
     }
 
     /**
      * Get token at a specific position
-     *
-     * @param int $q
-     * @param int $r
-     * @return TokenState|null
      */
     public function getTokenAtPosition(int $q, int $r): ?TokenState
     {
@@ -332,13 +318,12 @@ class BoardState extends State
                 return $token;
             }
         }
+
         return null;
     }
 
     /**
      * Recalculate valid moves for all tokens on the board
-     *
-     * @return void
      */
     public function recalculateAllTokenMoves(): void
     {
@@ -351,25 +336,42 @@ class BoardState extends State
     }
 
     /**
-     * Get all tokens as array for serialization (for frontend)
-     *
-     * @return array
+     * Get the game state associated with this board
+     */
+    public function game(): ?GameState
+    {
+        return $this->game_id ? GameState::load($this->game_id) : null;
+    }
+
+    /**
+     * Get all tokens as array for serialization
+     * Automatically includes valid_moves only for the active player's tokens if a game is started
      */
     public function getTokensArray(): array
     {
         $tokens = [];
+        $game = $this->game();
+        $activePlayerId = $game?->active_player_id;
+
         foreach ($this->token_ids as $tokenId) {
             $token = TokenState::load($tokenId);
             if ($token) {
-                $tokens[] = [
+                $tokenData = [
                     'id' => $token->id,
                     'player_id' => $token->player_id,
                     'q' => $token->q,
                     'r' => $token->r,
-                    'valid_moves' => $token->valid_moves,
                 ];
+
+                // Only include valid_moves if there's an active player and this token belongs to them
+                if ($activePlayerId && $token->player_id === $activePlayerId) {
+                    $tokenData['valid_moves'] = $token->valid_moves;
+                }
+
+                $tokens[] = $tokenData;
             }
         }
+
         return $tokens;
     }
 }

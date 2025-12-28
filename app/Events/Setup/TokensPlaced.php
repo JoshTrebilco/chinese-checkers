@@ -3,9 +3,8 @@
 namespace App\Events\Setup;
 
 use App\Events\BroadcastEvent;
-use App\Events\Setup\TokenCreated;
-use App\States\GameState;
 use App\States\BoardState;
+use App\States\GameState;
 use App\States\PlayerState;
 use Thunk\Verbs\Attributes\Autodiscovery\AppliesToState;
 use Thunk\Verbs\Event;
@@ -35,7 +34,7 @@ class TokensPlaced extends Event
     {
         $player = PlayerState::load($this->player_id);
         $startingPositions = $board->getStartingPositionsForColor($player->color);
-        
+
         $this->assert(
             count($startingPositions) === 10,
             'Starting positions must have exactly 10 positions.'
@@ -88,18 +87,18 @@ class TokensPlaced extends Event
 
     public function handle(GameState $gameState, BoardState $boardState, PlayerState $playerState)
     {
-        // Reload board to get updated token states
         $boardState = BoardState::load($this->board_id);
-        
-        // Add tokens to boardState for frontend
-        $boardStateArray = (array) $boardState;
-        $boardStateArray['tokens'] = $boardState->getTokensArray();
-        
+        $boardStateForBroadcast = (object) [
+            'id' => $boardState->id,
+            'tokens' => $boardState->getTokensArray(),
+        ];
+
         $broadcastEvent = new BroadcastEvent;
         $broadcastEvent->setGameState($gameState);
         $broadcastEvent->setPlayerState($playerState);
-        $broadcastEvent->setBoardState((object) $boardStateArray);
+        $broadcastEvent->setBoardState($boardStateForBroadcast);
         $broadcastEvent->setEvent(self::class);
+
         event($broadcastEvent);
     }
 }
