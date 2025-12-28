@@ -490,7 +490,6 @@
 
             // Update tokens if boardState has token data
             if (boardState && boardState.tokens) {
-                // Reload tokens from boardState
                 const tokensMap = {};
                 if (Array.isArray(boardState.tokens)) {
                     boardState.tokens.forEach(token => {
@@ -501,10 +500,9 @@
                 }
             }
 
-            // Update active player if changed
-            if (boardState && boardState.active_player_id !== undefined) {
-                this.activePlayerId = String(boardState.active_player_id);
-                // Clear selection if it's no longer the player's turn
+            // Update active player from gameState (EndedTurn broadcasts to gameState)
+            if (gameState && gameState.active_player_id !== undefined) {
+                this.activePlayerId = String(gameState.active_player_id);
                 if (String(this.authPlayerId) !== String(this.activePlayerId)) {
                     this.clearHighlights();
                     this.selectedToken = null;
