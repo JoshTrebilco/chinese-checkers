@@ -18,6 +18,225 @@ beforeEach(function () {
     Verbs::commitImmediately();
 });
 
+test('Full game simulation with moves, turn changes, and win condition', function () {
+    // =========================================================================
+    // PHASE 1: GAME SETUP
+    // =========================================================================
+
+    // Create a new game
+    $game_state = verb(new GameCreated)->state(GameState::class);
+    expect($game_state->started)->toBeFalse();
+    expect($game_state->ended)->toBeFalse();
+    expect($game_state->winner_id)->toBeNull();
+
+    // Create the board
+    $board_state = verb(new BoardCreated(game_id: $game_state->id))->state(BoardState::class);
+    expect($board_state->game_id)->toBe($game_state->id);
+    expect($board_state->getTotalPositions())->toBe(121);
+    expect($board_state->token_ids)->toBeEmpty();
+
+    // =========================================================================
+    // PHASE 2: PLAYERS JOIN
+    // =========================================================================
+
+    // Player 1 selects blue (South) and joins
+    verb(new PlayerColorSelected(game_id: $game_state->id, player_id: 1, color: 'blue'));
+    $player1 = verb(new PlayerJoinedGame(game_id: $game_state->id, player_id: 1, name: 'Alice'))->state(PlayerState::class);
+    expect($player1->color)->toBe('blue');
+    expect($player1->name)->toBe('Alice');
+
+    $board_state = BoardState::load($board_state->id);
+    expect($board_state->token_ids)->toHaveCount(10);
+
+    // Player 2 selects red (North) and joins
+    verb(new PlayerColorSelected(game_id: $game_state->id, player_id: 2, color: 'red'));
+    $player2 = verb(new PlayerJoinedGame(game_id: $game_state->id, player_id: 2, name: 'Bob'))->state(PlayerState::class);
+    expect($player2->color)->toBe('red');
+
+    $board_state = BoardState::load($board_state->id);
+    $game_state = GameState::load($game_state->id);
+    expect($board_state->token_ids)->toHaveCount(20);
+    expect($game_state->player_ids)->toHaveCount(2);
+
+    // Verify tokens are in correct starting positions
+    $bluePositions = $board_state->getStartingPositionsForColor('blue');
+    $redPositions = $board_state->getStartingPositionsForColor('red');
+
+    foreach ($bluePositions as $pos) {
+        $cell = $board_state->getCell($pos['q'], $pos['r']);
+        expect($cell['piece'])->toBe(1);
+    }
+    foreach ($redPositions as $pos) {
+        $cell = $board_state->getCell($pos['q'], $pos['r']);
+        expect($cell['piece'])->toBe(2);
+    }
+
+    // Before game starts - no valid_moves in token arrays
+    $tokensArray = $board_state->getTokensArray();
+    foreach ($tokensArray as $token) {
+        expect($token)->not->toHaveKey('valid_moves');
+    }
+
+    // =========================================================================
+    // PHASE 3: GAME STARTS
+    // =========================================================================
+
+    verb(new GameStarted(game_id: $game_state->id, player_id: 1));
+    $game_state = GameState::load($game_state->id);
+    $board_state = BoardState::load($board_state->id);
+
+    expect($game_state->started)->toBeTrue();
+    expect($game_state->active_player_id)->toBe(1);
+    expect($game_state->isInProgress())->toBeTrue();
+
+    // Only active player's tokens have valid_moves
+    $tokensArray = $board_state->getTokensArray();
+    foreach ($tokensArray as $token) {
+        if ($token['player_id'] === 1) {
+            expect($token)->toHaveKey('valid_moves');
+        } else {
+            expect($token)->not->toHaveKey('valid_moves');
+        }
+    }
+
+    // =========================================================================
+    // PHASE 4: GAMEPLAY - MULTIPLE TURNS
+    // =========================================================================
+
+    // Turn 1: Player 1 (blue) moves
+    $tokens1 = $board_state->getTokensForPlayer(1);
+    $token1 = $tokens1[0];
+    $originalPos1 = ['q' => $token1->q, 'r' => $token1->r];
+    $validMoves1 = $token1->valid_moves;
+    expect($validMoves1)->not->toBeEmpty();
+
+    $toPos1 = $validMoves1[0];
+    verb(new TokenMoved(
+        game_id: $game_state->id,
+        board_id: $board_state->id,
+        player_id: 1,
+        from_q: $originalPos1['q'],
+        from_r: $originalPos1['r'],
+        to_q: $toPos1['q'],
+        to_r: $toPos1['r'],
+        token_id: $token1->id
+    ));
+
+    $board_state = BoardState::load($board_state->id);
+    $game_state = GameState::load($game_state->id);
+    $token1 = TokenState::load($token1->id);
+
+    // Verify move happened
+    expect($token1->q)->toBe($toPos1['q']);
+    expect($token1->r)->toBe($toPos1['r']);
+    expect($board_state->getCell($originalPos1['q'], $originalPos1['r'])['piece'])->toBeNull();
+    expect($board_state->getCell($toPos1['q'], $toPos1['r'])['piece'])->toBe(1);
+
+    // TokenMoved auto-fires EndedTurn
+    expect($game_state->active_player_id)->toBe(2);
+    expect($game_state->last_player_id)->toBe(1);
+
+    // Now player 2's tokens have valid_moves
+    $tokensArray = $board_state->getTokensArray();
+    foreach ($tokensArray as $token) {
+        if ($token['player_id'] === 2) {
+            expect($token)->toHaveKey('valid_moves');
+        } else {
+            expect($token)->not->toHaveKey('valid_moves');
+        }
+    }
+
+    // Turn 2: Player 2 (red) moves
+    $tokens2 = $board_state->getTokensForPlayer(2);
+    $token2 = $tokens2[0];
+    $originalPos2 = ['q' => $token2->q, 'r' => $token2->r];
+    $validMoves2 = $token2->valid_moves;
+    expect($validMoves2)->not->toBeEmpty();
+
+    $toPos2 = $validMoves2[0];
+    verb(new TokenMoved(
+        game_id: $game_state->id,
+        board_id: $board_state->id,
+        player_id: 2,
+        from_q: $originalPos2['q'],
+        from_r: $originalPos2['r'],
+        to_q: $toPos2['q'],
+        to_r: $toPos2['r'],
+        token_id: $token2->id
+    ));
+
+    $board_state = BoardState::load($board_state->id);
+    $game_state = GameState::load($game_state->id);
+    $token2 = TokenState::load($token2->id);
+
+    // Verify move
+    expect($token2->q)->toBe($toPos2['q']);
+    expect($token2->r)->toBe($toPos2['r']);
+
+    // Back to player 1
+    expect($game_state->active_player_id)->toBe(1);
+    expect($game_state->last_player_id)->toBe(2);
+
+    // Turn 3: Player 1 moves again
+    $tokens1 = $board_state->getTokensForPlayer(1);
+    $token1b = $tokens1[1]; // Different token this time
+    $validMoves1b = $token1b->valid_moves;
+    expect($validMoves1b)->not->toBeEmpty();
+
+    $toPos1b = $validMoves1b[0];
+    verb(new TokenMoved(
+        game_id: $game_state->id,
+        board_id: $board_state->id,
+        player_id: 1,
+        from_q: $token1b->q,
+        from_r: $token1b->r,
+        to_q: $toPos1b['q'],
+        to_r: $toPos1b['r'],
+        token_id: $token1b->id
+    ));
+
+    $game_state = GameState::load($game_state->id);
+
+    // Verify turn changed
+    expect($game_state->active_player_id)->toBe(2);
+    expect($game_state->last_player_id)->toBe(1);
+    expect($game_state->isInProgress())->toBeTrue();
+
+    // =========================================================================
+    // PHASE 5: WIN CONDITION
+    // =========================================================================
+
+    // checkWin should return false (tokens not in goal)
+    $board_state = BoardState::load($board_state->id);
+    expect($board_state->checkWin(1))->toBeFalse();
+    expect($board_state->checkWin(2))->toBeFalse();
+
+    // Verify goal positions are correct
+    $blueGoal = $board_state->getGoalPositionsForColor('blue');
+    $redStart = $board_state->getStartingPositionsForColor('red');
+    expect($blueGoal)->toBe($redStart); // Blue's goal is red's start
+
+    // =========================================================================
+    // PHASE 6: GAME END SCENARIOS
+    // =========================================================================
+
+    // Test PlayerWonGame manually (in a real game this would fire from checkWin)
+    verb(new \App\Events\Gameplay\PlayerWonGame(game_id: $game_state->id, player_id: 1));
+    $game_state = GameState::load($game_state->id);
+
+    expect($game_state->winner_id)->toBe(1);
+    expect($game_state->ended)->toBeTrue();
+    expect($game_state->isInProgress())->toBeFalse();
+
+    // Cannot set another winner
+    try {
+        verb(new \App\Events\Gameplay\PlayerWonGame(game_id: $game_state->id, player_id: 2));
+        expect(true)->toBeFalse('Expected exception');
+    } catch (\Throwable $e) {
+        expect($e->getMessage())->toContain('already won');
+    }
+});
+
 test('board is generated with all valid hexagonal coordinates', function () {
     $game_state = verb(new GameCreated)->state(GameState::class);
 
@@ -630,4 +849,262 @@ test('TokenState valid moves are recalculated after a move', function () {
             expect($token1->valid_moves)->toBeArray();
         }
     }
+});
+
+test('BoardState game_id is set correctly by BoardCreated', function () {
+    $game_state = verb(new GameCreated)->state(GameState::class);
+    $board_state = verb(new BoardCreated(game_id: $game_state->id))->state(BoardState::class);
+
+    // Verify game_id is set on the board
+    expect($board_state->game_id)->toBe($game_state->id);
+
+    // Verify board->game() returns the correct GameState
+    $game = $board_state->game();
+    expect($game)->not->toBeNull()
+        ->and($game->id)->toBe($game_state->id)
+        ->and($game->board_id)->toBe($board_state->id);
+});
+
+test('getTokensArray includes valid_moves only for active player', function () {
+    $game_state = verb(new GameCreated)->state(GameState::class);
+    $board_state = verb(new BoardCreated(game_id: $game_state->id))->state(BoardState::class);
+
+    // Add two players
+    verb(new PlayerColorSelected(game_id: $game_state->id, player_id: 1, color: 'blue'));
+    verb(new PlayerJoinedGame(game_id: $game_state->id, player_id: 1, name: 'Player 1'));
+    verb(new PlayerColorSelected(game_id: $game_state->id, player_id: 2, color: 'red'));
+    verb(new PlayerJoinedGame(game_id: $game_state->id, player_id: 2, name: 'Player 2'));
+
+    $board_state = BoardState::load($board_state->id);
+
+    // Before game starts: tokens should NOT have valid_moves in the array
+    $tokensArray = $board_state->getTokensArray();
+    expect($tokensArray)->toHaveCount(20);
+
+    foreach ($tokensArray as $token) {
+        expect($token)->not->toHaveKey('valid_moves');
+    }
+
+    // Start the game with player 1 as active
+    verb(new GameStarted(game_id: $game_state->id, player_id: 1));
+    $game_state = GameState::load($game_state->id);
+    $board_state = BoardState::load($board_state->id);
+
+    // After game starts: only active player's tokens should have valid_moves
+    $tokensArray = $board_state->getTokensArray();
+    expect($tokensArray)->toHaveCount(20);
+
+    $player1TokensWithMoves = 0;
+    $player2TokensWithMoves = 0;
+
+    foreach ($tokensArray as $token) {
+        if ($token['player_id'] === 1) {
+            expect($token)->toHaveKey('valid_moves');
+            $player1TokensWithMoves++;
+        } else {
+            expect($token)->not->toHaveKey('valid_moves');
+        }
+    }
+
+    expect($player1TokensWithMoves)->toBe(10);
+});
+
+test('EndedTurn changes active player correctly', function () {
+    $game_state = verb(new GameCreated)->state(GameState::class);
+    verb(new BoardCreated(game_id: $game_state->id));
+
+    verb(new PlayerColorSelected(game_id: $game_state->id, player_id: 1, color: 'blue'));
+    verb(new PlayerJoinedGame(game_id: $game_state->id, player_id: 1, name: 'Player 1'));
+    verb(new PlayerColorSelected(game_id: $game_state->id, player_id: 2, color: 'red'));
+    verb(new PlayerJoinedGame(game_id: $game_state->id, player_id: 2, name: 'Player 2'));
+
+    // Start game with player 1
+    verb(new GameStarted(game_id: $game_state->id, player_id: 1));
+    $game_state = GameState::load($game_state->id);
+
+    expect($game_state->active_player_id)->toBe(1);
+    expect($game_state->last_player_id)->toBeNull();
+
+    // End turn for player 1
+    verb(new \App\Events\Gameplay\EndedTurn(game_id: $game_state->id, player_id: 1));
+    $game_state = GameState::load($game_state->id);
+
+    expect($game_state->active_player_id)->toBe(2);
+    expect($game_state->last_player_id)->toBe(1);
+
+    // End turn for player 2
+    verb(new \App\Events\Gameplay\EndedTurn(game_id: $game_state->id, player_id: 2));
+    $game_state = GameState::load($game_state->id);
+
+    expect($game_state->active_player_id)->toBe(1);
+    expect($game_state->last_player_id)->toBe(2);
+});
+
+test('EndedTurn fails when game is not in progress', function () {
+    $game_state = verb(new GameCreated)->state(GameState::class);
+    verb(new BoardCreated(game_id: $game_state->id));
+
+    verb(new PlayerColorSelected(game_id: $game_state->id, player_id: 1, color: 'blue'));
+    verb(new PlayerJoinedGame(game_id: $game_state->id, player_id: 1, name: 'Player 1'));
+    verb(new PlayerColorSelected(game_id: $game_state->id, player_id: 2, color: 'red'));
+    verb(new PlayerJoinedGame(game_id: $game_state->id, player_id: 2, name: 'Player 2'));
+
+    // Try to end turn before game is started
+    try {
+        verb(new \App\Events\Gameplay\EndedTurn(game_id: $game_state->id, player_id: 1));
+        expect(true)->toBeFalse('Expected exception to be thrown');
+    } catch (\Throwable $e) {
+        expect($e->getMessage())->toContain('not in progress');
+    }
+});
+
+test('EndedTurn broadcasts board state with valid_moves for new active player', function () {
+    $game_state = verb(new GameCreated)->state(GameState::class);
+    $board_state = verb(new BoardCreated(game_id: $game_state->id))->state(BoardState::class);
+
+    verb(new PlayerColorSelected(game_id: $game_state->id, player_id: 1, color: 'blue'));
+    verb(new PlayerJoinedGame(game_id: $game_state->id, player_id: 1, name: 'Player 1'));
+    verb(new PlayerColorSelected(game_id: $game_state->id, player_id: 2, color: 'red'));
+    verb(new PlayerJoinedGame(game_id: $game_state->id, player_id: 2, name: 'Player 2'));
+
+    verb(new GameStarted(game_id: $game_state->id, player_id: 1));
+
+    // End turn for player 1, player 2 becomes active
+    verb(new \App\Events\Gameplay\EndedTurn(game_id: $game_state->id, player_id: 1));
+    $game_state = GameState::load($game_state->id);
+    $board_state = BoardState::load($board_state->id);
+
+    // After EndedTurn, player 2 is now active
+    expect($game_state->active_player_id)->toBe(2);
+
+    // getTokensArray should now include valid_moves only for player 2
+    $tokensArray = $board_state->getTokensArray();
+
+    foreach ($tokensArray as $token) {
+        if ($token['player_id'] === 2) {
+            expect($token)->toHaveKey('valid_moves');
+        } else {
+            expect($token)->not->toHaveKey('valid_moves');
+        }
+    }
+});
+
+test('goal positions are the opposite corner from starting positions', function () {
+    $game_state = verb(new GameCreated)->state(GameState::class);
+    $board_state = verb(new BoardCreated(game_id: $game_state->id))->state(BoardState::class);
+
+    // Blue starts in South, goal is North (red's starting position)
+    $blueGoal = $board_state->getGoalPositionsForColor('blue');
+    $redStart = $board_state->getStartingPositionsForColor('red');
+    expect($blueGoal)->toBe($redStart);
+
+    // Red starts in North, goal is South (blue's starting position)
+    $redGoal = $board_state->getGoalPositionsForColor('red');
+    $blueStart = $board_state->getStartingPositionsForColor('blue');
+    expect($redGoal)->toBe($blueStart);
+
+    // Yellow starts in NE, goal is SW (purple's starting position)
+    $yellowGoal = $board_state->getGoalPositionsForColor('yellow');
+    $purpleStart = $board_state->getStartingPositionsForColor('purple');
+    expect($yellowGoal)->toBe($purpleStart);
+
+    // Purple starts in SW, goal is NE (yellow's starting position)
+    $purpleGoal = $board_state->getGoalPositionsForColor('purple');
+    $yellowStart = $board_state->getStartingPositionsForColor('yellow');
+    expect($purpleGoal)->toBe($yellowStart);
+});
+
+test('checkWin returns false when tokens are in starting position', function () {
+    $game_state = verb(new GameCreated)->state(GameState::class);
+    $board_state = verb(new BoardCreated(game_id: $game_state->id))->state(BoardState::class);
+
+    verb(new PlayerColorSelected(game_id: $game_state->id, player_id: 1, color: 'blue'));
+    verb(new PlayerJoinedGame(game_id: $game_state->id, player_id: 1, name: 'Player 1'));
+
+    $board_state = BoardState::load($board_state->id);
+
+    // Player 1's tokens are in starting position, not goal
+    expect($board_state->checkWin(1))->toBeFalse();
+});
+
+test('isBoardFull returns false when board has empty positions', function () {
+    $game_state = verb(new GameCreated)->state(GameState::class);
+    $board_state = verb(new BoardCreated(game_id: $game_state->id))->state(BoardState::class);
+
+    // Board with no tokens - has empty positions
+    expect($board_state->isBoardFull())->toBeFalse();
+
+    verb(new PlayerColorSelected(game_id: $game_state->id, player_id: 1, color: 'blue'));
+    verb(new PlayerJoinedGame(game_id: $game_state->id, player_id: 1, name: 'Player 1'));
+
+    $board_state = BoardState::load($board_state->id);
+
+    // Board with 10 tokens still has empty positions
+    expect($board_state->isBoardFull())->toBeFalse();
+});
+
+test('PlayerWonGame sets winner and ends game', function () {
+    $game_state = verb(new GameCreated)->state(GameState::class);
+    verb(new BoardCreated(game_id: $game_state->id));
+
+    verb(new PlayerColorSelected(game_id: $game_state->id, player_id: 1, color: 'blue'));
+    verb(new PlayerJoinedGame(game_id: $game_state->id, player_id: 1, name: 'Player 1'));
+    verb(new PlayerColorSelected(game_id: $game_state->id, player_id: 2, color: 'red'));
+    verb(new PlayerJoinedGame(game_id: $game_state->id, player_id: 2, name: 'Player 2'));
+
+    verb(new GameStarted(game_id: $game_state->id, player_id: 1));
+    $game_state = GameState::load($game_state->id);
+
+    expect($game_state->winner_id)->toBeNull();
+    expect($game_state->ended)->toBeFalse();
+
+    verb(new \App\Events\Gameplay\PlayerWonGame(game_id: $game_state->id, player_id: 1));
+    $game_state = GameState::load($game_state->id);
+
+    expect($game_state->winner_id)->toBe(1);
+    expect($game_state->ended)->toBeTrue();
+    expect($game_state->isInProgress())->toBeFalse();
+});
+
+test('PlayerWonGame fails if game already has winner', function () {
+    $game_state = verb(new GameCreated)->state(GameState::class);
+    verb(new BoardCreated(game_id: $game_state->id));
+
+    verb(new PlayerColorSelected(game_id: $game_state->id, player_id: 1, color: 'blue'));
+    verb(new PlayerJoinedGame(game_id: $game_state->id, player_id: 1, name: 'Player 1'));
+    verb(new PlayerColorSelected(game_id: $game_state->id, player_id: 2, color: 'red'));
+    verb(new PlayerJoinedGame(game_id: $game_state->id, player_id: 2, name: 'Player 2'));
+
+    verb(new GameStarted(game_id: $game_state->id, player_id: 1));
+    verb(new \App\Events\Gameplay\PlayerWonGame(game_id: $game_state->id, player_id: 1));
+
+    // Try to set another winner
+    try {
+        verb(new \App\Events\Gameplay\PlayerWonGame(game_id: $game_state->id, player_id: 2));
+        expect(true)->toBeFalse('Expected exception to be thrown');
+    } catch (\Throwable $e) {
+        expect($e->getMessage())->toContain('already won');
+    }
+});
+
+test('PlayersTiedGame ends game without winner', function () {
+    $game_state = verb(new GameCreated)->state(GameState::class);
+    verb(new BoardCreated(game_id: $game_state->id));
+
+    verb(new PlayerColorSelected(game_id: $game_state->id, player_id: 1, color: 'blue'));
+    verb(new PlayerJoinedGame(game_id: $game_state->id, player_id: 1, name: 'Player 1'));
+    verb(new PlayerColorSelected(game_id: $game_state->id, player_id: 2, color: 'red'));
+    verb(new PlayerJoinedGame(game_id: $game_state->id, player_id: 2, name: 'Player 2'));
+
+    verb(new GameStarted(game_id: $game_state->id, player_id: 1));
+    $game_state = GameState::load($game_state->id);
+
+    expect($game_state->ended)->toBeFalse();
+
+    verb(new \App\Events\Gameplay\PlayersTiedGame(game_id: $game_state->id));
+    $game_state = GameState::load($game_state->id);
+
+    expect($game_state->winner_id)->toBeNull();
+    expect($game_state->ended)->toBeTrue();
+    expect($game_state->isInProgress())->toBeFalse();
 });

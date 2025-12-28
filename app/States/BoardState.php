@@ -374,4 +374,75 @@ class BoardState extends State
 
         return $tokens;
     }
+
+    /**
+     * Get the goal positions for a given color (opposite corner from starting position)
+     * In Chinese Checkers, players move to the opposite corner:
+     * - blue (South) -> red (North)
+     * - red (North) -> blue (South)
+     * - yellow (NE) -> purple (SW)
+     * - purple (SW) -> yellow (NE)
+     * - green (SE) -> orange (NW)
+     * - orange (NW) -> green (SE)
+     */
+    public function getGoalPositionsForColor(string $color): array
+    {
+        $oppositeColor = match ($color) {
+            'blue' => 'red',
+            'red' => 'blue',
+            'yellow' => 'purple',
+            'purple' => 'yellow',
+            'green' => 'orange',
+            'orange' => 'green',
+            default => 'red',
+        };
+
+        return $this->getStartingPositionsForColor($oppositeColor);
+    }
+
+    /**
+     * Check if a player has won the game
+     * A player wins when all their tokens are in the goal triangle (opposite corner)
+     */
+    public function checkWin(int $playerId): bool
+    {
+        $player = PlayerState::load($playerId);
+        if (! $player || ! $player->color) {
+            return false;
+        }
+
+        $goalPositions = $this->getGoalPositionsForColor($player->color);
+        $goalPositionKeys = array_map(fn ($pos) => "{$pos['q']},{$pos['r']}", $goalPositions);
+
+        $tokens = $this->getTokensForPlayer($playerId);
+        if (count($tokens) !== 10) {
+            return false;
+        }
+
+        // Check if all tokens are in goal positions
+        foreach ($tokens as $token) {
+            $tokenKey = "{$token->q},{$token->r}";
+            if (! in_array($tokenKey, $goalPositionKeys)) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    /**
+     * Check if the board is full (all positions occupied)
+     * Note: In Chinese Checkers, this doesn't lead to a tie - it's not really possible
+     * to fill all positions. This is kept for compatibility with the event structure.
+     */
+    public function isBoardFull(): bool
+    {
+        foreach ($this->cells as $cell) {
+            if ($cell['piece'] === null) {
+                return false;
+            }
+        }
+
+        return true;
+    }
 }

@@ -121,9 +121,34 @@ class TokenMoved extends Event
 
     public function fired(BoardState $board)
     {
-        // Recalculate valid moves for all tokens after move
+        $game = GameState::load($this->game_id);
         $board = BoardState::load($this->board_id);
+
+        // Recalculate valid moves for all tokens after move
         $board->recalculateAllTokenMoves();
+
+        // Check for win
+        if ($board->checkWin($this->player_id)) {
+            PlayerWonGame::fire(
+                game_id: $this->game_id,
+                player_id: $this->player_id,
+            );
+        }
+
+        // Check for tie
+        if ($board->isBoardFull()) {
+            PlayersTiedGame::fire(
+                game_id: $this->game_id,
+            );
+        }
+
+        // Check for end of turn
+        if ($game->isInProgress()) {
+            EndedTurn::fire(
+                game_id: $this->game_id,
+                player_id: $this->player_id,
+            );
+        }
     }
 
     public function handle(GameState $gameState, BoardState $boardState, PlayerState $playerState, TokenState $tokenState)
