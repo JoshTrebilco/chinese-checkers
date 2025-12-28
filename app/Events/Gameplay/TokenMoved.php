@@ -55,7 +55,7 @@ class TokenMoved extends Event
             $token !== null,
             "Token not found at position ({$this->from_q}, {$this->from_r})."
         );
-        
+
         $this->assert(
             $token->player_id === $this->player_id,
             "Token at position ({$this->from_q}, {$this->from_r}) does not belong to player."
@@ -86,7 +86,7 @@ class TokenMoved extends Event
                 break;
             }
         }
-        
+
         $this->assert(
             $isValidMove,
             "Move to position ({$this->to_q}, {$this->to_r}) is not a valid move for this token."
@@ -112,6 +112,8 @@ class TokenMoved extends Event
     {
         // Update token position if it matches the token_id
         if ($token->id === $this->token_id) {
+            $token->from_q = $this->from_q;
+            $token->from_r = $this->from_r;
             $token->q = $this->to_q;
             $token->r = $this->to_r;
         }
@@ -125,22 +127,13 @@ class TokenMoved extends Event
     }
 
     public function handle(GameState $gameState, BoardState $boardState, PlayerState $playerState, TokenState $tokenState)
-    {  
+    {
         $broadcastEvent = new BroadcastEvent;
         $broadcastEvent->setGameState($gameState);
         $broadcastEvent->setBoardState($boardState);
         $broadcastEvent->setPlayerState($playerState);
         $broadcastEvent->setTokenState($tokenState);
-        // $broadcastEvent->setEvent(self::class);
-        // Set event as object with type and move data
-        $broadcastEvent->setEvent([
-            'type' => self::class,
-            'from_q' => $this->from_q,
-            'from_r' => $this->from_r,
-            'to_q' => $this->to_q,
-            'to_r' => $this->to_r,
-            'player_id' => $this->player_id,
-        ]);
+        $broadcastEvent->setEvent(self::class);
 
         event($broadcastEvent);
     }

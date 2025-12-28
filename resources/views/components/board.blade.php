@@ -464,12 +464,12 @@
             });
         }
 
-        handleEvent(eventData, boardState, playerState) {
+        handleEvent(eventType, gameState, boardState, playerState, tokenState) {
             // Check if event is TokenMoved and has move data
-            if (eventData && typeof eventData === 'object' && eventData.type === 'App\\Events\\Gameplay\\TokenMoved') {
+            if (eventType === 'App\\Events\\Gameplay\\TokenMoved') {
                 this.movementInProgress = true;
                 
-                const { from_q, from_r, to_q, to_r, player_id } = eventData;
+                const { from_q, from_r, q, r, player_id } = tokenState;
                 
                 // Clear selection if this move was made by the current user
                 if (this.selectedToken && 
@@ -480,18 +480,13 @@
                     this.selectedToken = null;
                 }
                 
-                this.moveToken(player_id, from_q, from_r, to_q, to_r)
+                this.moveToken(player_id, from_q, from_r, q, r)
                     .then(() => {
                         this.movementInProgress = false;
                         this.updateCursorStyles();
                     });
-            } else if (eventData === 'App\\Events\\Gameplay\\TokenMoved') {
-                // Fallback: if event is just a string, try to find the move from boardState
-                // This shouldn't happen with our updated event, but handle it gracefully
-                console.warn('TokenMoved event received without move data');
-                this.movementInProgress = false;
-                this.updateCursorStyles();
             }
+
 
             // Update tokens if boardState has token data
             if (boardState && boardState.tokens) {
@@ -520,19 +515,7 @@
 
         init() {
             this.channel.listen('BroadcastEvent', (data) => {
-                // The event can be either a string (class name) or an object with type and move data
-                const eventData = data.event;
-                
-                // Handle TokenMoved events with move data
-                if (eventData && typeof eventData === 'object' && eventData.type === 'App\\Events\\Gameplay\\TokenMoved') {
-                    this.handleEvent(eventData, data.boardState, data.playerState);
-                } else if (eventData === 'App\\Events\\Gameplay\\TokenMoved') {
-                    // Fallback for string-based event
-                    this.handleEvent(eventData, data.boardState, data.playerState);
-                } else {
-                    // Handle other events that might update game state
-                    this.handleEvent(eventData, data.gameState || data.boardState, data.playerState);
-                }
+                this.handleEvent(data.event, data.gameState, data.boardState, data.playerState, data.tokenState);
             });
 
             // Add click handlers
