@@ -39,16 +39,35 @@
             this.channel = window.Echo.channel(@json($channel));
         }
 
-        handleEvent(event, gameState) {
+        async waitForBoardAnimation() {
+            // Wait for board animation to complete if it's in progress
+            if (window.board && window.board.movementInProgress) {
+                return new Promise((resolve) => {
+                    const checkAnimation = () => {
+                        if (!window.board.movementInProgress) {
+                            resolve();
+                        } else {
+                            setTimeout(checkAnimation, 50);
+                        }
+                    };
+                    checkAnimation();
+                });
+            }
+            return Promise.resolve();
+        }
+
+        async handleEvent(event, gameState) {
             // Handle game end events
             if (event === 'App\\Events\\Gameplay\\PlayerWonGame' || 
                 event === 'App\\Events\\Gameplay\\PlayersTiedGame') {
+                await this.waitForBoardAnimation();
                 window.location.reload();
             }
 
-            // Handle turn end - reload after animation completes
+            // Handle turn end - wait for animation to complete before reload
             if (event === 'App\\Events\\Gameplay\\EndedTurn') {
-                setTimeout(() => window.location.reload(), 600);
+                await this.waitForBoardAnimation();
+                window.location.reload();
             }
 
             // Setup events should refresh the page
