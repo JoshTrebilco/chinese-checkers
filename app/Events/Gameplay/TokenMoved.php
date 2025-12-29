@@ -16,6 +16,8 @@ use Thunk\Verbs\Event;
 #[AppliesToState(TokenState::class)]
 class TokenMoved extends Event
 {
+    public array $jump_path = [];
+
     public function __construct(
         public int $game_id,
         public int $board_id,
@@ -78,11 +80,13 @@ class TokenMoved extends Event
             $token->calculateValidMoves($board);
         }
 
-        // Validate move is in token's valid_moves list
+        // Validate move is in token's valid_moves list and extract the path
         $isValidMove = false;
         foreach ($token->valid_moves as $move) {
             if ($move['q'] === $this->to_q && $move['r'] === $this->to_r) {
                 $isValidMove = true;
+                // Extract the jump path for animation
+                $this->jump_path = $move['path'] ?? [];
                 break;
             }
         }
@@ -116,6 +120,8 @@ class TokenMoved extends Event
             $token->from_r = $this->from_r;
             $token->q = $this->to_q;
             $token->r = $this->to_r;
+            // Store the jump path for animation on the frontend
+            $token->jump_path = $this->jump_path;
         }
     }
 

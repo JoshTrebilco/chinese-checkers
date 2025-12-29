@@ -20,6 +20,8 @@ class TokenState extends State
 
     public array $valid_moves = [];
 
+    public array $jump_path = [];
+
     /**
      * Calculate all valid moves for this token (single-step + multi-jump)
      */
@@ -28,14 +30,19 @@ class TokenState extends State
         $validMoves = [];
 
         // Single-step moves: check all 6 adjacent positions for empty spaces
+        // These have an empty path (direct movement, no jumps)
         $adjacentPositions = $board->getAdjacentPositions($this->q, $this->r);
         foreach ($adjacentPositions as $pos) {
             if ($board->pieceAt($pos['q'], $pos['r']) === null) {
-                $validMoves[] = $pos;
+                $validMoves[] = [
+                    'q' => $pos['q'],
+                    'r' => $pos['r'],
+                    'path' => [],
+                ];
             }
         }
 
-        // Multi-jump moves: find all possible jump sequences
+        // Multi-jump moves: find all possible jump sequences (includes paths)
         $jumpMoves = $this->calculateJumpMoves($board, $this->q, $this->r);
         $validMoves = array_merge($validMoves, $jumpMoves);
 
@@ -47,9 +54,10 @@ class TokenState extends State
      * Recursively calculate all possible jump moves from a starting position
      *
      * @param  array  $visited  Visited positions to avoid infinite loops
-     * @return array Array of ['q' => int, 'r' => int] positions
+     * @param  array  $currentPath  The path taken to reach this position
+     * @return array Array of ['q' => int, 'r' => int, 'path' => array] positions with paths
      */
-    private function calculateJumpMoves(BoardState $board, int $startQ, int $startR, array $visited = []): array
+    private function calculateJumpMoves(BoardState $board, int $startQ, int $startR, array $visited = [], array $currentPath = []): array
     {
         $validEndPositions = [];
         $key = "{$startQ},{$startR}";
@@ -82,10 +90,17 @@ class TokenState extends State
                 $board->pieceAt($landQ, $landR) === null &&
                 $board->isOnBoard($landQ, $landR)) {
 
-                $validEndPositions[] = ['q' => $landQ, 'r' => $landR];
+                // Build the path to this landing position
+                $pathToLanding = array_merge($currentPath, [['q' => $landQ, 'r' => $landR]]);
+
+                $validEndPositions[] = [
+                    'q' => $landQ,
+                    'r' => $landR,
+                    'path' => $pathToLanding,
+                ];
 
                 // Recursively find more jumps from landing position
-                $moreJumps = $this->calculateJumpMoves($board, $landQ, $landR, $visited);
+                $moreJumps = $this->calculateJumpMoves($board, $landQ, $landR, $visited, $pathToLanding);
                 $validEndPositions = array_merge($validEndPositions, $moreJumps);
             }
         }
@@ -94,7 +109,7 @@ class TokenState extends State
     }
 
     /**
-     * Remove duplicate positions from array
+     * Remove duplicate positions from array (keeps the first path found for each position)
      */
     private function uniquePositions(array $positions): array
     {
@@ -105,7 +120,11 @@ class TokenState extends State
             $key = "{$pos['q']},{$pos['r']}";
             if (! isset($seen[$key])) {
                 $seen[$key] = true;
-                $unique[] = $pos;
+                $unique[] = [
+                    'q' => $pos['q'],
+                    'r' => $pos['r'],
+                    'path' => $pos['path'] ?? [],
+                ];
             }
         }
 

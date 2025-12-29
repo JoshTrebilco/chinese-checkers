@@ -201,7 +201,7 @@
             });
         }
 
-        async moveToken(playerId, fromQ, fromR, toQ, toR) {
+        async moveToken(playerId, fromQ, fromR, toQ, toR, jumpPath = []) {
             const token = this.getToken(playerId, fromQ, fromR);
             if (!token) return;
 
@@ -209,10 +209,19 @@
 
             this.movementInProgress = true;
             
-            // Animate directly to destination
-            this.updateTokenPosition(token, toQ, toR, '0.5s');
+            // If there's a jump path, animate through each hop
+            if (jumpPath && jumpPath.length > 0) {
+                const hopDuration = 250; // ms per hop
+                for (const pos of jumpPath) {
+                    this.updateTokenPosition(token, pos.q, pos.r, `${hopDuration}ms`);
+                    await this.delay(hopDuration);
+                }
+            } else {
+                // Single-step move: animate directly to destination
+                this.updateTokenPosition(token, toQ, toR, '0.5s');
+                await this.delay(500);
+            }
             
-            await this.delay(500);
             this.movementInProgress = false;
         }
 
@@ -469,7 +478,7 @@
             if (eventType === 'App\\Events\\Gameplay\\TokenMoved') {
                 this.movementInProgress = true;
                 
-                const { from_q, from_r, q, r, player_id } = tokenState;
+                const { from_q, from_r, q, r, player_id, jump_path } = tokenState;
                 
                 // Clear selection if this move was made by the current user
                 if (this.selectedToken && 
@@ -480,7 +489,8 @@
                     this.selectedToken = null;
                 }
                 
-                this.moveToken(player_id, from_q, from_r, q, r)
+                // Pass the jump path for hop-by-hop animation
+                this.moveToken(player_id, from_q, from_r, q, r, jump_path || [])
                     .then(() => {
                         this.movementInProgress = false;
                         this.updateCursorStyles();
