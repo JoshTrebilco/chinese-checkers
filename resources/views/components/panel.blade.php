@@ -1,6 +1,6 @@
 @props(['game', 'auth_player_id', 'channel'])
 <div class="space-y-3">
-    @if(! $game->hasPlayer($auth_player_id) && ! $game->isInProgress())
+    @if(! $game->hasPlayer($auth_player_id) && ! $game->isInProgress() && !$game->ended)
         <div class="bg-slate-900/50 backdrop-blur-sm rounded-2xl p-6 border border-red-800/50 shadow-xl">
             <div class="flex items-center space-x-3 mb-4">
                 <div class="flex-shrink-0">
@@ -29,7 +29,7 @@
         </div>
     @endif
 
-    @if ($game->created && $game->hasEnoughPlayers() && ! $game->isInProgress())
+    @if ($game->created && $game->hasEnoughPlayers() && ! $game->isInProgress() && !$game->ended)
         <form action="{{ route('players.startGame', ['game_id' => $game->id]) }}" method="post">
             @csrf
             <button type="submit"
@@ -39,7 +39,7 @@
         </form>
     @endif
 
-    @if ($game->hasPlayer($auth_player_id) && !$game->isInProgress())
+    @if ($game->hasPlayer($auth_player_id) && !$game->isInProgress() && !$game->ended)
         <!-- Share Game Section -->
         <div class="bg-slate-900/50 backdrop-blur-sm rounded-2xl px-4 py-3 shadow-xl">
             <div class="flex items-center space-x-3 mb-4">
@@ -107,25 +107,39 @@
         id="players-bar-toggle" 
         class="w-full px-4 py-3 flex items-center justify-between hover:bg-slate-800/50 transition-colors"
     >
-        <div class="flex items-center space-x-3">
-            <span class="text-sm text-amber-300/80">Current Turn:</span>
-            <div id="active-player-display" class="flex items-center space-x-2">
-                @php
-                    $activePlayer = $game->activePlayer();
-                @endphp
-                @if($activePlayer)
-                    <x-token :color="$activePlayer->color" :size="24" />
-                    <span class="text-amber-200 font-medium" id="active-player-name">{{ $activePlayer->name }}</span>
-                    @if ($activePlayer->id == $auth_player_id)
-                        <span class="inline-flex items-center rounded-md bg-amber-400/10 px-2 py-1 text-xs font-medium text-amber-400 ring-1 ring-inset ring-amber-400/30">
-                            You
-                        </span>
+        @if(! $game->isInProgress() && !$game->ended)
+            <div class="flex items-center space-x-3">
+                <span class="text-sm text-amber-300/80">Current Turn:</span>
+                <div id="active-player-display" class="flex items-center space-x-2">
+                    @php
+                        $activePlayer = $game->activePlayer();
+                    @endphp
+                    @if($activePlayer)
+                        <x-token :color="$activePlayer->color" :size="24" />
+                        <span class="text-amber-200 font-medium" id="active-player-name">{{ $activePlayer->name }}</span>
+                        @if ($activePlayer->id == $auth_player_id)
+                            <span class="inline-flex items-center rounded-md bg-amber-400/10 px-2 py-1 text-xs font-medium text-amber-400 ring-1 ring-inset ring-amber-400/30">
+                                You
+                            </span>
+                        @endif
+                    @else
+                        <span class="text-amber-200/60 font-medium">Waiting...</span>
                     @endif
-                @else
-                    <span class="text-amber-200/60 font-medium">Waiting...</span>
+                </div>
+            </div>
+        @endif
+        @if($game->ended)
+            <div class="flex items-center space-x-3">
+                <span class="text-sm text-amber-300/80">Winner:</span>
+                <x-token :color="$game->winner()?->color" :size="24" />
+                <span class="text-amber-200 font-medium">{{ $game->winner()?->name }}</span>
+                @if($game->winner()?->id == $auth_player_id)
+                    <span class="inline-flex items-center rounded-md bg-amber-400/10 px-2 py-1 text-xs font-medium text-amber-400 ring-1 ring-inset ring-amber-400/30">
+                        You
+                    </span>
                 @endif
             </div>
-        </div>
+        @endif
         <svg 
             id="players-bar-chevron" 
             class="w-5 h-5 text-amber-300 transition-transform" 
