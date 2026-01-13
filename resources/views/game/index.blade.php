@@ -123,5 +123,8 @@
             <p class="text-sm">🏮 Master the path of strategy! 🏮</p>
         </div>
     </div>
+    <div class="fixed bottom-2 left-2 font-mono text-xs text-amber-400">
+        {{ trim(shell_exec('git rev-parse --short HEAD')) }}
+    </div>
 </x-layout>
 
