@@ -2,6 +2,7 @@
 @php
     $cells = $board->getCells();
     $players = $game->players()->keyBy('id');
+    $activePlayerId = $game->activePlayer()?->id;
     // Create a map of tokens by position for easy lookup
     $tokensByPosition = [];
     foreach ($tokens as $token) {
@@ -9,13 +10,19 @@
         $tokensByPosition[$key] = $token;
     }
     // Prepare tokens array for JavaScript
-    $tokensForJs = collect($tokens)->map(fn($t) => [
-        'id' => $t->id,
-        'player_id' => $t->player_id,
-        'q' => $t->q,
-        'r' => $t->r,
-        'valid_moves' => $t->valid_moves
-    ])->keyBy(fn($t) => "{$t['q']},{$t['r']}")->toArray();
+    // Only calculate valid_moves for the active player's tokens
+    $tokensForJs = collect($tokens)->map(function($t) use ($board, $activePlayerId) {
+        $data = [
+            'id' => $t->id,
+            'player_id' => $t->player_id,
+            'q' => $t->q,
+            'r' => $t->r,
+        ];
+        if ($activePlayerId && $t->player_id === $activePlayerId) {
+            $data['valid_moves'] = $t->getValidMoves($board);
+        }
+        return $data;
+    })->keyBy(fn($t) => "{$t['q']},{$t['r']}")->toArray();
 @endphp
 
 <div class="relative mx-auto w-full h-auto flex items-center justify-center">

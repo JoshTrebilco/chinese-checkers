@@ -79,10 +79,6 @@ class TokensPlaced extends Event
                 token_id: snowflake_id(),
             );
         }
-
-        // Recalculate valid moves for all tokens after all are created
-        $board = BoardState::load($this->board_id);
-        $board->recalculateAllTokenMoves();
     }
 
     public function handle(GameState $gameState, BoardState $boardState, PlayerState $playerState)

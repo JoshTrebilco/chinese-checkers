@@ -75,14 +75,10 @@ class TokenMoved extends Event
             "To position ({$this->to_q}, {$this->to_r}) is already occupied."
         );
 
-        // Ensure valid moves are calculated
-        if (empty($token->valid_moves)) {
-            $token->calculateValidMoves($board);
-        }
-
-        // Validate move is in token's valid_moves list and extract the path
+        // Validate move is in token's valid moves and extract the path
+        $validMoves = $token->getValidMoves($board);
         $isValidMove = false;
-        foreach ($token->valid_moves as $move) {
+        foreach ($validMoves as $move) {
             if ($move['q'] === $this->to_q && $move['r'] === $this->to_r) {
                 $isValidMove = true;
                 // Extract the jump path for animation
@@ -129,9 +125,6 @@ class TokenMoved extends Event
     {
         $game = GameState::load($this->game_id);
         $board = BoardState::load($this->board_id);
-
-        // Recalculate valid moves for all tokens after move
-        $board->recalculateAllTokenMoves();
 
         // Check for win
         if ($board->checkWin($this->player_id)) {

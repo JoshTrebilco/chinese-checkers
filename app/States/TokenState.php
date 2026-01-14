@@ -18,14 +18,13 @@ class TokenState extends State
 
     public int $from_r;
 
-    public array $valid_moves = [];
-
     public array $jump_path = [];
 
     /**
-     * Calculate all valid moves for this token (single-step + multi-jump)
+     * Get all valid moves for this token (single-step + multi-jump)
+     * Calculated on-demand, not stored in state.
      */
-    public function calculateValidMoves(BoardState $board): void
+    public function getValidMoves(BoardState $board): array
     {
         $validMoves = [];
 
@@ -46,8 +45,8 @@ class TokenState extends State
         $jumpMoves = $this->calculateJumpMoves($board, $this->q, $this->r);
         $validMoves = array_merge($validMoves, $jumpMoves);
 
-        // Remove duplicates and store
-        $this->valid_moves = $this->uniquePositions($validMoves);
+        // Remove duplicates and return
+        return $this->uniquePositions($validMoves);
     }
 
     /**

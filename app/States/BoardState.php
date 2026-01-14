@@ -323,19 +323,6 @@ class BoardState extends State
     }
 
     /**
-     * Recalculate valid moves for all tokens on the board
-     */
-    public function recalculateAllTokenMoves(): void
-    {
-        foreach ($this->token_ids as $tokenId) {
-            $token = TokenState::load($tokenId);
-            if ($token) {
-                $token->calculateValidMoves($this);
-            }
-        }
-    }
-
-    /**
      * Get the game state associated with this board
      */
     public function game(): ?GameState
@@ -345,7 +332,7 @@ class BoardState extends State
 
     /**
      * Get all tokens as array for serialization
-     * Automatically includes valid_moves only for the active player's tokens if a game is started
+     * Calculates valid_moves on-demand only for the active player's tokens
      */
     public function getTokensArray(): array
     {
@@ -363,9 +350,9 @@ class BoardState extends State
                     'r' => $token->r,
                 ];
 
-                // Only include valid_moves if there's an active player and this token belongs to them
+                // Only calculate valid_moves for the active player's tokens
                 if ($activePlayerId && $token->player_id === $activePlayerId) {
-                    $tokenData['valid_moves'] = $token->valid_moves;
+                    $tokenData['valid_moves'] = $token->getValidMoves($this);
                 }
 
                 $tokens[] = $tokenData;
